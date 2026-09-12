@@ -1120,10 +1120,14 @@
 }
 
 .withdrawal-table thead th {
+  position: sticky;
+  top: 64px;
+  z-index: 20;
   padding: 10px 12px;
   color: #475569;
   background: #f1f5f9;
   border-bottom: 1px solid var(--app-border);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .08);
   font-size: 11px;
   line-height: 1.35;
   font-weight: 800;
@@ -1201,6 +1205,26 @@
   color: var(--app-text-muted);
   font-size: 10px;
   line-height: 1.45;
+}
+
+.drug-entry__pack-context {
+  color: #0f766e;
+  font-weight: 800;
+}
+
+.drug-entry__history {
+  min-width: 0;
+  color: var(--app-text-muted);
+  font-size: 10px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.drug-entry__unit {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .drug-entry__code {
@@ -1281,6 +1305,16 @@
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (min-width: 701px) {
+  .drug-entry__quantity-control {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .drug-entry__pack {
+    display: none;
+  }
 }
 
 .drug-entry__total {
@@ -1496,7 +1530,7 @@
   justify-content: flex-end;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   .withdrawal-table,
   .withdrawal-table tbody {
     display: block;
@@ -1544,6 +1578,7 @@
   }
 
   .drug-entry__medicine,
+  .drug-entry__unit,
   .drug-entry__total,
   .drug-entry__note {
     grid-column: 1 / -1;
@@ -1552,6 +1587,10 @@
   .drug-entry__medicine {
     padding-bottom: 10px !important;
     border-bottom: 1px solid var(--app-border-soft) !important;
+  }
+
+  .drug-entry__unit {
+    display: none !important;
   }
 
   .drug-entry__field > label,
@@ -1794,12 +1833,13 @@
   border-radius: var(--app-radius) var(--app-radius) 0 0;
 }
 
-.withdrawal-table thead th:nth-child(1) { width: 12%; }
-.withdrawal-table thead th:nth-child(2) { width: 30%; }
-.withdrawal-table thead th:nth-child(3) { width: 12%; }
-.withdrawal-table thead th:nth-child(4) { width: 18%; }
-.withdrawal-table thead th:nth-child(5) { width: 12%; }
-.withdrawal-table thead th:nth-child(6) { width: 16%; }
+.withdrawal-table thead th:nth-child(1) { width: 10%; }
+.withdrawal-table thead th:nth-child(2) { width: 32%; }
+.withdrawal-table thead th:nth-child(3) { width: 11%; }
+.withdrawal-table thead th:nth-child(4) { width: 12%; }
+.withdrawal-table thead th:nth-child(5) { width: 10%; }
+.withdrawal-table thead th:nth-child(6) { width: 10%; }
+.withdrawal-table thead th:nth-child(7) { width: 15%; }
 
 .drug-entry__code-cell {
   overflow-wrap: anywhere;
@@ -1997,7 +2037,7 @@
   opacity: .65;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 700px) {
   .drug-entry__medicine {
     order: 1;
     padding-bottom: 0 !important;

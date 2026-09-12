@@ -16,6 +16,38 @@ $stmt = $pdo->prepare("SELECT * FROM drug_item WHERE is_active = 1 ORDER BY type
 $stmt->execute();
 $items = $stmt->fetchAll();
 
+// Reuse the Rate 3เดือน semantics from view_withdrawal.php for this facility:
+// the last three completed calendar months, delivered quantity × historical pack.
+$monthlyTotals = [];
+$drugIds = array_values(array_unique(array_map('intval', array_column($items, 'id'))));
+if ($drugIds) {
+    $placeholders = implode(',', array_fill(0, count($drugIds), '?'));
+    $sql = "SELECT wi.drug_item_id, SUM(wi.delivered_quantity * COALESCE(wi.pack_size_snapshot, d.pack_size)) AS last_month_total
+        FROM withdrawal_items wi
+        JOIN withdrawals w ON wi.withdrawal_id = w.id
+        JOIN drug_item d ON wi.drug_item_id = d.id
+        WHERE w.status IN ('submitted','approved')
+          AND w.created_at >= ? AND w.created_at < ?
+          AND w.host_code = ?
+          AND wi.drug_item_id IN ($placeholders)
+        GROUP BY wi.drug_item_id";
+    $stmtTot = $pdo->prepare($sql);
+    for ($i = 1; $i <= 3; $i++) {
+        $start = date('Y-m-01', strtotime(sprintf('first day of -%d month', $i)));
+        $end = $i === 1 ? date('Y-m-01') : date('Y-m-01', strtotime(sprintf('first day of -%d month', $i - 1)));
+        $stmtTot->execute(array_merge([$start, $end, $host_code], $drugIds));
+        while ($row = $stmtTot->fetch()) {
+            $monthlyTotals[$i][(int)$row['drug_item_id']] = (float)$row['last_month_total'];
+        }
+        $stmtTot->closeCursor();
+    }
+}
+$monthLabels = [];
+for ($i = 1; $i <= 3; $i++) {
+    $ts = strtotime(sprintf('first day of -%d month', $i));
+    $monthLabels[$i] = substr((string)((int)date('Y', $ts) + 543), -2) . '-' . date('m', $ts);
+}
+
 // จัดกลุ่มตาม type
 $grouped = [];
 foreach ($items as $it) {
@@ -102,8 +134,8 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
                 </th>
                 <th scope="col">
                   จำนวนขอเบิก
-                  <small>หน่วยบรรจุ</small>
                 </th>
+                <th scope="col">หน่วยบรรจุ</th>
                 <th scope="col">ยอดรวม</th>
                 <th scope="col">หมายเหตุ</th>
               </tr>
@@ -112,7 +144,7 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
               <?php foreach ($grouped as $type => $rows): ?>
                 <?php $label = $drugTypes[$type]['label'] ?? $type; ?>
                 <tr class="withdrawal-group-row" data-withdrawal-group-header="<?= e((string)$type) ?>">
-                  <th colspan="6" scope="rowgroup"><span><?= e($label) ?></span><small><?= count($rows) ?> รายการ</small></th>
+                  <th colspan="7" scope="rowgroup"><span><?= e($label) ?></span><small><?= count($rows) ?> รายการ</small></th>
                 </tr>
 
                 <?php foreach ($rows as $it): ?>
@@ -133,7 +165,13 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
                     <td class="drug-entry__medicine">
                       <div class="drug-entry__name"><?= e($it['name']) ?></div>
                       <div class="drug-entry__meta">
-                        <span>ขนาดบรรจุ <?= e($rawPack !== '' ? $rawPack : 'ไม่ระบุ') ?><?= $unit !== '' ? ' ' . e($unit) : '' ?></span>
+                        <span class="drug-entry__pack-context">บรรจุ <?= e($rawPack !== '' ? $rawPack : 'ไม่ระบุ') ?><?= $unit !== '' ? ' ' . e($unit) : '' ?></span>
+                        <span class="drug-entry__history">ย้อนหลัง 3 เดือน:
+                          <?php for ($mi = 1; $mi <= 3; $mi++): ?>
+                            <?= $mi > 1 ? ' · ' : '' ?><?= e($monthLabels[$mi]) ?> <?= (int)($monthlyTotals[$mi][$drugId] ?? 0) ?>
+                          <?php endfor; ?>
+                          <?= e($unit) ?>
+                        </span>
                         <span class="drug-entry__selected-label">กำลังเบิก</span>
                       </div>
                     </td>
@@ -152,6 +190,8 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
                       </div>
                       <span class="drug-entry__feedback drug-entry__feedback--quantity" data-qty-feedback hidden>กรุณากรอกจำนวนตั้งแต่ 0 ขึ้นไป</span>
                     </td>
+
+                    <td class="drug-entry__unit" data-label="หน่วยบรรจุ"><?= e($rawPack !== '' ? $rawPack : 'ไม่ระบุ') ?><?= $unit !== '' ? ' ' . e($unit) : '' ?></td>
 
                     <td class="drug-entry__total" data-label="ยอดรวม">
                       <strong id="total-<?= $drugId ?>" class="total-span" data-total-output>0<?= $unit !== '' ? ' ' . e($unit) : '' ?></strong>
