@@ -1239,7 +1239,6 @@
 /* Drug table */
 .withdrawal-list {
   margin-top: 14px;
-  overflow: hidden;
 }
 
 .withdrawal-list__head {
@@ -1274,14 +1273,6 @@
   font-weight: 700;
 }
 
-.withdrawal-table-scroll {
-  max-height: calc(100vh - 304px);
-  min-height: 320px;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #94a3b8 transparent;
-}
-
 .withdrawal-table {
   width: 100%;
   border-collapse: separate;
@@ -1290,9 +1281,6 @@
 }
 
 .withdrawal-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20;
   padding: 10px 12px;
   color: #475569;
   background: #f1f5f9;
@@ -1723,12 +1711,6 @@
 @media (max-width: 900px) {
   .withdrawal-toolbar {
     top: 66px;
-  }
-
-  .withdrawal-table-scroll {
-    max-height: none;
-    min-height: 0;
-    overflow: visible;
   }
 
   .withdrawal-table,
