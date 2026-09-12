@@ -1,0 +1,40 @@
+# Local database credentials and machine-specific configuration
+/includes/db.php
+/includes/db - Copy.php
+/includes/db-old.php
+/.env
+/.env.*
+!/.env.example
+
+# Installed dependencies (restore with Composer/npm)
+/vendor/
+/node_modules/
+**/node_modules/
+
+# Runtime output, generated previews and import logs
+/tmp/*
+!/tmp/.htaccess
+/tool/import_logs/*
+!/tool/import_logs/.htaccess
+*.log
+
+# Local backups and database exports (keep migration scripts in databaseSQL/)
+/backUP-*/
+/databaseSQL/old/if0_*_withdraw_drug*.sql
+/databaseSQL/old/*.zip
+/databaseSQL/old/*.gz
+
+# Editor, OS and local tooling files
+/.idea/
+/.vscode/
+/.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# Test and coverage artifacts
+/.phpunit.cache/
+/coverage/
