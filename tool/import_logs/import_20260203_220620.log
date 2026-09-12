@@ -1,0 +1,5 @@
+Import file=drug_items_import_sample.csv
+Added=3, Updated=0, Skipped=0
+Row 2: inserted (PARA500 / พาราเซตามอล 500 มก.)
+Row 3: inserted (AMOX250 / อม็อกซิคลิน 250 มก.)
+Row 4: inserted (IBU200 / ไอบูโพรเฟน 200 มก.)
