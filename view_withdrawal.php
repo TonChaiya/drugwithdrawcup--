@@ -15,6 +15,11 @@ $withdrawalStatusLabels = [
   'rejected' => 'ปฏิเสธ/ยกเลิก',
 ];
 
+function withdrawal_delivered_or_zero($value): ?int {
+  if (is_string($value) && trim($value) === '') return 0;
+  return bounded_non_negative_int($value, 1000000);
+}
+
 // Users may view withdrawals from their own facility (same host_code).
 // Editing a draft remains restricted to its creator; managers may manage only
 // records inside the server-side scope assigned to their account.
@@ -119,7 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       header('Location: view_withdrawal.php?id=' . $id); exit;
     }
     foreach ($delivered as $wiId => $dq) {
-      if ((int)$wiId <= 0 || bounded_non_negative_int($dq, 1000000) === null) {
+      if ((int)$wiId <= 0 || withdrawal_delivered_or_zero($dq) === null) {
         $_SESSION['flash'] = 'จำนวนจ่ายจริงต้องเป็นจำนวนเต็ม 0–1,000,000';
         header('Location: view_withdrawal.php?id=' . $id); exit;
       }
@@ -129,16 +134,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['flash'] = 'หมายเหตุต้องไม่เกิน 255 ตัวอักษร';
         header('Location: view_withdrawal.php?id=' . $id); exit;
       }
-    }
-    // validation: ensure at least one delivered quantity > 0 or a note provided
-    $hasAny = false;
-    foreach ($delivered as $dq) { if (((int)$dq) > 0) { $hasAny = true; break; } }
-    if (!$hasAny) {
-      foreach ($notes as $n) { if (trim($n) !== '') { $hasAny = true; break; } }
-    }
-    if (!$hasAny) {
-      $_SESSION['flash'] = 'กรุณาระบุจำนวนที่จ่ายจริงหรือหมายเหตุอย่างน้อยหนึ่งรายการก่อนอนุมัติ';
-      header('Location: view_withdrawal.php?id=' . $id); exit;
     }
     $pdo->beginTransaction();
     try {
@@ -162,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($n === null) throw new RuntimeException('หมายเหตุต้องไม่เกิน 255 ตัวอักษร');
         $lookup->execute([(int)$wi_id, $id]); $ld = $lookup->fetch();
         if (!$ld) throw new RuntimeException('พบรายการที่ไม่ได้อยู่ในใบเบิกนี้');
-        $deliveredValue = bounded_non_negative_int($dq, 1000000);
+        $deliveredValue = withdrawal_delivered_or_zero($dq);
         if ($deliveredValue === null || $deliveredValue > (int)$ld['quantity']) throw new RuntimeException('จำนวนจ่ายจริงต้องไม่มากกว่าจำนวนที่ขอเบิก');
         $packParam = $ld['pack_size_snapshot'] ?? $ld['pack_size'] ?? null;
         $unitParam = $ld['unit_snapshot'] ?? $ld['unit'] ?? '';
@@ -248,7 +243,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $upDelivered = $pdo->prepare('UPDATE withdrawal_items SET delivered_quantity=? WHERE id=? AND withdrawal_id=?');
         foreach ($delivered as $wiIdRaw => $deliveredRaw) {
           $wiId = (int)$wiIdRaw;
-          $deliveredValue = bounded_non_negative_int($deliveredRaw, 1000000);
+          $deliveredValue = withdrawal_delivered_or_zero($deliveredRaw);
           if (!isset($itemMap[$wiId]) || $deliveredValue === null) throw new RuntimeException('จำนวนจ่ายจริงไม่ถูกต้อง');
           $upDelivered->execute([$deliveredValue, $wiId, $id]);
         }
@@ -584,9 +579,10 @@ foreach($showItems as $it):
                 <?php if($isAdmin && $w['status']==='submitted'): ?>
                     <input type="number"
                       name="delivered[<?php echo $it['wi_id']; ?>]"
-                      value="<?php echo (int)$it['delivered_quantity']; ?>"
+                      value="<?php echo (int)$it['delivered_quantity'] > 0 ? (int)$it['delivered_quantity'] : ''; ?>"
                       min="0" max="<?php echo $initialQty; ?>" inputmode="numeric"
                       aria-label="จ่ายจริง <?php echo e($it['working_code']); ?>"
+                      title="เว้นว่างเพื่อไม่อนุมัติรายการนี้"
                       class="approval-number approval-number--delivered delivered-input"
                       data-packnum="<?php echo $packNum; ?>"
                       data-unit="<?php echo e($unitVal); ?>"
@@ -983,47 +979,35 @@ foreach($showItems as $it):
             </script>
             <script>
               // wire save button to submit the main items form with action=save
-              (function(){
+              document.addEventListener('DOMContentLoaded', function(){
                 const saveBtn = document.getElementById('save-btn');
                 const itemsForm = document.getElementById('items-form');
                 const itemsAction = document.getElementById('items-action');
                 if (saveBtn && itemsForm && itemsAction) {
                   saveBtn.addEventListener('click', function(){
                     if (!confirm('บันทึกการแก้ไขรายการใช่หรือไม่?')) return;
-                    // validate: require at least one qty>0 or a note
-                    var hasAny = false;
-                    itemsForm.querySelectorAll('input[name^="qty"]').forEach(function(q){ if (parseFloat(q.value||'0')>0) hasAny = true; });
-                    if (!hasAny) { itemsForm.querySelectorAll('input[name^="new_qty"]').forEach(function(q){ if (parseFloat(q.value||'0')>0) hasAny = true; }); }
-                    if (!hasAny) { itemsForm.querySelectorAll('input[name^="note"]').forEach(function(n){ if ((n.value||'').trim() !== '') hasAny = true; }); }
-                    if (!hasAny) { itemsForm.querySelectorAll('input[name^="new_note"]').forEach(function(n){ if ((n.value||'').trim() !== '') hasAny = true; }); }
-                    if (!hasAny) { alert('กรุณาระบุรายการหรือหมายเหตุก่อนบันทึก'); return; }
                     if (window.syncAllNoteFields) window.syncAllNoteFields();
                     itemsAction.value = 'save';
                     itemsForm.submit();
                   });
                 }
-              })();
+              });
             </script>
             <script>
               // wire approve button to submit main form with action=approve
-              (function(){
+              document.addEventListener('DOMContentLoaded', function(){
                 const approveBtn = document.getElementById('approve-btn');
                 const itemsForm = document.getElementById('items-form');
                 const itemsAction = document.getElementById('items-action');
                 if (approveBtn && itemsForm && itemsAction) {
                   approveBtn.addEventListener('click', function(){
                     if (!confirm('อนุมัติใบเบิกและบันทึกจำนวนจ่ายจริงใช่หรือไม่?')) return;
-                    // validate: require at least one delivered>0 or a note
-                    var hasAny = false;
-                    itemsForm.querySelectorAll('input[name^="delivered"]').forEach(function(d){ if (parseFloat(d.value||'0')>0) hasAny = true; });
-                    if (!hasAny) { itemsForm.querySelectorAll('input[name^="note"]').forEach(function(n){ if ((n.value||'').trim() !== '') hasAny = true; }); }
-                    if (!hasAny) { alert('กรุณาระบุจำนวนที่จ่ายจริงหรือหมายเหตุอย่างน้อยหนึ่งรายการก่อนอนุมัติ'); return; }
                     if (window.syncAllNoteFields) window.syncAllNoteFields();
                     itemsAction.value = 'approve';
                     itemsForm.submit();
                   });
                 }
-              })();
+              });
             </script>
     </section>
 
@@ -1032,6 +1016,7 @@ foreach($showItems as $it):
         <div>
           <h2 id="approvalSummaryTitle">สรุปการอนุมัติ</h2>
           <p aria-live="polite">รายการทั้งหมด <?php echo count($items); ?> • ระบุจำนวนจ่าย <span id="approvalDeliveredCount">0</span> • ไม่จ่าย <span id="approvalZeroCount"><?php echo count($items); ?></span></p>
+          <p>ช่องจ่ายจริงที่เว้นว่าง = ไม่อนุมัติรายการนั้น</p>
         </div>
         <div class="approval-summary__actions">
           <button id="save-btn" type="button" class="approval-button approval-button--secondary">บันทึกการแก้ไข</button>
