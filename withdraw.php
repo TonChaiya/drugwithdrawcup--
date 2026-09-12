@@ -39,9 +39,9 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>สร้างใบเบิกยา | ระบบเบิกยา CUP สันกำแพง</title>
-  <link rel="stylesheet" href="assets/css/app.css">
+  <link rel="stylesheet" href="assets/css/app.css?v=<?= (int)filemtime(__DIR__ . '/assets/css/app.css') ?>">
   <?php define('DRUG_WITHDRAW_APP_STYLES', true); ?>
-  <script src="assets/js/withdrawal.js" defer></script>
+  <script src="assets/js/withdrawal.js?v=<?= (int)filemtime(__DIR__ . '/assets/js/withdrawal.js') ?>" defer></script>
 </head>
 <body class="app-page withdrawal-page">
   <?php include __DIR__ . '/includes/nav.php'; ?>

@@ -1994,9 +1994,7 @@
 }
 
 .withdrawal-page.is-editing .withdrawal-utility {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(120%);
+  opacity: .65;
 }
 
 @media (max-width: 900px) {
