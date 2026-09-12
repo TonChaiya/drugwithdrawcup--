@@ -40,18 +40,10 @@ $draft = $stmt2->fetch();
 <body class="app-page withdrawal-page">
   <?php include __DIR__ . '/includes/nav.php'; ?>
 
-  <main class="app-ui app-container withdrawal-workspace">
+  <main class="app-ui app-container withdrawal-workspace" id="withdrawalTop">
     <header class="withdrawal-page-header">
-      <div>
-        <p class="withdrawal-page-header__kicker">สร้างรายการเบิกยา</p>
-        <h1 class="withdrawal-page-header__title">สร้างใบเบิกยา</h1>
-        <p class="withdrawal-page-header__subtitle">ค้นหารายการ กรอกยอดคงเหลือเพื่อรายงาน และระบุจำนวนที่ต้องการเบิก</p>
-      </div>
-      <div class="withdrawal-page-header__context" aria-label="ข้อมูลสถานบริการ">
-        <span>สถานบริการ</span>
-        <strong><?= e($user['facility_name'] ?? $host_code) ?></strong>
-        <small>รหัส <?= e($host_code) ?></small>
-      </div>
+      <h1 class="withdrawal-page-header__title">สร้างใบเบิกยา</h1>
+      <p class="withdrawal-page-header__meta"><?= e($user['facility_name'] ?? $host_code) ?> <span aria-hidden="true">·</span> รหัส <?= e($host_code) ?></p>
     </header>
 
     <?php if ($msg): ?>
@@ -61,10 +53,13 @@ $draft = $stmt2->fetch();
     <form id="withdrawalForm" method="post" action="submit_withdrawal.php" class="withdrawal-form">
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
-      <section class="app-card withdrawal-toolbar" aria-label="ค้นหาและกรองรายการยา">
-        <div class="withdrawal-toolbar__top">
+      <section class="withdrawal-toolbar" aria-label="ค้นหาและกรองรายการยา">
+        <div class="withdrawal-toolbar__main">
+          <button type="button" class="withdrawal-category-trigger" data-withdrawal-category-open aria-haspopup="dialog" aria-controls="withdrawalCategoryDrawer" aria-expanded="false">
+            <span aria-hidden="true">☰</span> หมวดยา <small data-withdrawal-active-group-label>ทั้งหมด</small>
+          </button>
           <div class="withdrawal-search">
-            <label for="drugSearch" class="withdrawal-search__label">ค้นหารหัสยา / ชื่อยา</label>
+            <label for="drugSearch" class="withdrawal-search__label">ค้นหารหัสยา หรือชื่อยา</label>
             <div class="withdrawal-search__control">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="m21 21-4.35-4.35m2.35-5.15a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -73,28 +68,14 @@ $draft = $stmt2->fetch();
               <button type="button" class="withdrawal-search__clear" data-withdrawal-search-clear aria-label="ล้างคำค้นหา">ล้าง</button>
             </div>
           </div>
-          <div class="withdrawal-toolbar__summary" aria-live="polite">
-            <span class="withdrawal-toolbar__summary-label">รายการที่กำลังเบิก</span>
-            <strong><span data-withdrawal-selected-count>0</span> รายการ</strong>
-          </div>
         </div>
-
-        <div class="withdrawal-toolbar__filters">
-          <div class="withdrawal-group-filters" role="group" aria-label="กรองตามกลุ่มยา">
-            <button type="button" class="withdrawal-filter-chip is-active" data-withdrawal-group="all" aria-pressed="true">ทั้งหมด</button>
-            <?php foreach ($grouped as $type => $list): ?>
-              <?php $label = $drugTypes[$type]['label'] ?? $type; ?>
-              <button type="button" class="withdrawal-filter-chip" data-withdrawal-group="<?= e((string)$type) ?>" aria-pressed="false"><?= e($label) ?></button>
-            <?php endforeach; ?>
-          </div>
-          <button type="button" class="withdrawal-filled-filter" data-withdrawal-filled-filter aria-pressed="false">
-            <span class="withdrawal-filled-filter__indicator" aria-hidden="true"></span>
-            เฉพาะรายการที่กรอก
-          </button>
+        <div class="withdrawal-toolbar__minor">
+          <label class="withdrawal-filled-filter"><input type="checkbox" data-withdrawal-filled-filter> แสดงเฉพาะรายการที่เบิก</label>
+          <span class="withdrawal-toolbar__count" aria-live="polite">กำลังเบิก <strong data-withdrawal-selected-count>0</strong> รายการ</span>
         </div>
       </section>
 
-      <section class="app-card withdrawal-list" aria-labelledby="drug-list-title">
+      <section class="withdrawal-list" aria-labelledby="drug-list-title">
         <div class="withdrawal-list__head">
           <div>
             <h2 id="drug-list-title">รายการยา</h2>
@@ -107,10 +88,11 @@ $draft = $stmt2->fetch();
           <table class="withdrawal-table">
             <thead>
               <tr>
-                <th scope="col">ยา</th>
+                <th scope="col">รหัสยา</th>
+                <th scope="col">รายการยา</th>
                 <th scope="col">
                   ยอดคงเหลือ
-                  <small>ข้อมูลรายงาน</small>
+                  <small>เพื่อรายงาน</small>
                 </th>
                 <th scope="col">
                   จำนวนขอเบิก
@@ -124,7 +106,7 @@ $draft = $stmt2->fetch();
               <?php foreach ($grouped as $type => $rows): ?>
                 <?php $label = $drugTypes[$type]['label'] ?? $type; ?>
                 <tr class="withdrawal-group-row" data-withdrawal-group-header="<?= e((string)$type) ?>">
-                  <th colspan="5" scope="rowgroup"><span><?= e($label) ?></span><small><?= count($rows) ?> รายการ</small></th>
+                  <th colspan="6" scope="rowgroup"><span><?= e($label) ?></span><small><?= count($rows) ?> รายการ</small></th>
                 </tr>
 
                 <?php foreach ($rows as $it): ?>
@@ -141,10 +123,10 @@ $draft = $stmt2->fetch();
                     $drugId = (int)$it['id'];
                   ?>
                   <tr class="drug-entry" data-withdrawal-row data-drug-code="<?= e($it['working_code']) ?>" data-drug-name="<?= e($it['name']) ?>" data-drug-group="<?= e((string)$type) ?>">
+                    <td class="drug-entry__code-cell"><span class="drug-entry__code"><?= e($it['working_code']) ?></span></td>
                     <td class="drug-entry__medicine">
                       <div class="drug-entry__name"><?= e($it['name']) ?></div>
                       <div class="drug-entry__meta">
-                        <span class="drug-entry__code"><?= e($it['working_code']) ?></span>
                         <span>ขนาดบรรจุ <?= e($rawPack !== '' ? $rawPack : 'ไม่ระบุ') ?><?= $unit !== '' ? ' ' . e($unit) : '' ?></span>
                         <span class="drug-entry__selected-label">กำลังเบิก</span>
                       </div>
@@ -186,18 +168,41 @@ $draft = $stmt2->fetch();
         </div>
       </section>
 
-      <div class="withdrawal-action-bar" aria-label="การดำเนินการใบเบิก">
-        <div class="withdrawal-action-bar__summary">
-          <span>กำลังขอเบิก</span>
-          <strong><span data-withdrawal-selected-count>0</span> รายการ</strong>
+      <section id="withdrawalSummary" class="withdrawal-summary" aria-labelledby="withdrawalSummaryTitle">
+        <div class="withdrawal-summary__copy">
+          <h2 id="withdrawalSummaryTitle">สรุปใบเบิก</h2>
+          <p>รายการที่ขอเบิก <strong data-withdrawal-selected-count>0</strong> รายการ</p>
         </div>
-        <div class="withdrawal-action-bar__actions">
+        <div class="withdrawal-summary__actions">
           <button id="save-btn" type="submit" name="action" value="save" class="app-btn app-btn--secondary">บันทึกร่าง</button>
-          <button id="submit-btn" type="submit" name="action" value="submit" class="app-btn app-btn--primary" data-final-submit-trigger>ส่งใบเบิกให้ศูนย์</button>
+          <button id="submit-btn" type="submit" name="action" value="submit" class="app-btn app-btn--primary" data-final-submit-trigger>ตรวจสอบและส่งใบเบิก</button>
         </div>
-      </div>
+      </section>
     </form>
   </main>
+
+  <div id="withdrawalCategoryDrawer" class="withdrawal-category-drawer" hidden aria-hidden="true">
+    <div class="withdrawal-category-drawer__backdrop" data-withdrawal-category-close></div>
+    <section class="withdrawal-category-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="withdrawalCategoryTitle">
+      <header class="withdrawal-category-drawer__head">
+        <h2 id="withdrawalCategoryTitle">หมวดยา</h2>
+        <button type="button" class="withdrawal-category-drawer__close" data-withdrawal-category-close aria-label="ปิดหมวดยา">&times;</button>
+      </header>
+      <nav class="withdrawal-category-drawer__list" aria-label="เลือกหมวดยา">
+        <button type="button" class="withdrawal-category-drawer__item is-active" data-withdrawal-group="all" aria-pressed="true"><span>ทั้งหมด</span><small><?= count($items) ?></small></button>
+        <?php foreach ($grouped as $type => $list): ?>
+          <?php $label = $drugTypes[$type]['label'] ?? $type; ?>
+          <button type="button" class="withdrawal-category-drawer__item" data-withdrawal-group="<?= e((string)$type) ?>" aria-pressed="false"><span><?= e($label) ?></span><small><?= count($list) ?></small></button>
+        <?php endforeach; ?>
+      </nav>
+    </section>
+  </div>
+
+  <div class="withdrawal-utility" role="group" aria-label="ทางลัดในหน้าเบิกยา">
+    <button type="button" data-withdrawal-scroll-top aria-label="เลื่อนไปบนสุด" title="บนสุด">↑</button>
+    <button type="button" data-withdrawal-category-open aria-label="เปิดหมวดยา" title="หมวดยา">☰</button>
+    <button type="button" data-withdrawal-scroll-bottom aria-label="เลื่อนไปสรุปใบเบิก" title="ล่างสุด">↓</button>
+  </div>
 
   <div id="withdrawalNoteDialog" class="withdrawal-dialog" hidden aria-hidden="true">
     <div class="withdrawal-dialog__backdrop" data-close-note-editor></div>

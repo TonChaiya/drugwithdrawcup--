@@ -9,8 +9,12 @@
     var groupHeaders = Array.prototype.slice.call(form.querySelectorAll('[data-withdrawal-group-header]'));
     var searchInput = form.querySelector('[data-withdrawal-search]');
     var clearSearchButton = form.querySelector('[data-withdrawal-search-clear]');
-    var groupButtons = Array.prototype.slice.call(form.querySelectorAll('[data-withdrawal-group]'));
-    var filledFilterButton = form.querySelector('[data-withdrawal-filled-filter]');
+    var groupButtons = Array.prototype.slice.call(document.querySelectorAll('[data-withdrawal-group]'));
+    var filledFilterInput = form.querySelector('[data-withdrawal-filled-filter]');
+    var categoryDrawer = document.getElementById('withdrawalCategoryDrawer');
+    var categoryOpenButtons = Array.prototype.slice.call(document.querySelectorAll('[data-withdrawal-category-open]'));
+    var activeGroupLabel = form.querySelector('[data-withdrawal-active-group-label]');
+    var summary = document.getElementById('withdrawalSummary');
     var selectedCounters = document.querySelectorAll('[data-withdrawal-selected-count]');
     var visibleCounter = form.querySelector('[data-withdrawal-visible-count]');
     var emptyState = form.querySelector('[data-withdrawal-empty]');
@@ -24,6 +28,7 @@
     var filledOnly = false;
     var activeNoteInput = null;
     var lastFocusedElement = null;
+    var categoryReturnFocus = null;
     var suppressNextNoteFocus = false;
 
     function normalize(value) {
@@ -54,7 +59,7 @@
     }
 
     function refreshDocumentLock() {
-      setDocumentLocked(isDialogOpen(noteDialog) || isDialogOpen(submitDialog));
+      setDocumentLocked(isDialogOpen(noteDialog) || isDialogOpen(submitDialog) || isDialogOpen(categoryDrawer));
     }
 
     function updateRow(row) {
@@ -141,8 +146,50 @@
         var active = button.getAttribute('data-withdrawal-group') === group;
         button.classList.toggle('is-active', active);
         button.setAttribute('aria-pressed', String(active));
+        if (active && activeGroupLabel) {
+          var name = button.querySelector('span');
+          activeGroupLabel.textContent = name ? name.textContent : button.textContent;
+        }
       });
       refreshWorkspace();
+    }
+
+    function openCategoryDrawer(trigger) {
+      if (!categoryDrawer) return;
+      categoryReturnFocus = trigger || document.activeElement;
+      categoryDrawer.hidden = false;
+      categoryDrawer.setAttribute('aria-hidden', 'false');
+      categoryOpenButtons.forEach(function (button) { button.setAttribute('aria-expanded', 'true'); });
+      refreshDocumentLock();
+      var selected = categoryDrawer.querySelector('[data-withdrawal-group].is-active');
+      if (selected) selected.focus();
+    }
+
+    function closeCategoryDrawer() {
+      if (!isDialogOpen(categoryDrawer)) return;
+      categoryDrawer.hidden = true;
+      categoryDrawer.setAttribute('aria-hidden', 'true');
+      categoryOpenButtons.forEach(function (button) { button.setAttribute('aria-expanded', 'false'); });
+      refreshDocumentLock();
+      if (categoryReturnFocus && typeof categoryReturnFocus.focus === 'function') categoryReturnFocus.focus();
+      categoryReturnFocus = null;
+    }
+
+    function revealInvalidField(input) {
+      if (!input) return;
+      if (searchInput) searchInput.value = '';
+      filledOnly = false;
+      if (filledFilterInput) filledFilterInput.checked = false;
+      setActiveGroup('all');
+      input.focus();
+      if (typeof input.scrollIntoView === 'function') input.scrollIntoView({ block: 'center' });
+    }
+
+    function validNativeInputs() {
+      if (form.checkValidity()) return true;
+      revealInvalidField(form.querySelector(':invalid'));
+      form.reportValidity();
+      return false;
     }
 
     function syncActiveNote() {
@@ -205,14 +252,9 @@
     }
 
     function hasAnyEntry() {
-      var hasQuantity = rows.some(function (row) {
+      return rows.some(function (row) {
         var input = row.querySelector('[data-qty-input]');
         return input && parseFloat(input.value || '0') > 0;
-      });
-      if (hasQuantity) return true;
-      return rows.some(function (row) {
-        var input = row.querySelector('.note-popup-input');
-        return input && String(input.value || '').trim() !== '';
       });
     }
 
@@ -236,7 +278,7 @@
       });
 
       if (firstInvalid) {
-        firstInvalid.focus();
+        revealInvalidField(firstInvalid);
         if (missingIds.length) {
           window.alert('กรุณากรอกยอดคงเหลือของรายการที่ทำการขอเบิก: ' + missingIds.join(', '));
         } else {
@@ -274,17 +316,51 @@
     groupButtons.forEach(function (button) {
       button.addEventListener('click', function () {
         setActiveGroup(button.getAttribute('data-withdrawal-group') || 'all');
+        closeCategoryDrawer();
       });
     });
 
-    if (filledFilterButton) {
-      filledFilterButton.addEventListener('click', function () {
-        filledOnly = !filledOnly;
-        filledFilterButton.classList.toggle('is-active', filledOnly);
-        filledFilterButton.setAttribute('aria-pressed', String(filledOnly));
+    if (filledFilterInput) {
+      filledFilterInput.addEventListener('change', function () {
+        filledOnly = filledFilterInput.checked;
         refreshWorkspace();
       });
     }
+
+    categoryOpenButtons.forEach(function (button) {
+      button.addEventListener('click', function () { openCategoryDrawer(button); });
+    });
+    if (categoryDrawer) {
+      categoryDrawer.querySelectorAll('[data-withdrawal-category-close]').forEach(function (button) {
+        button.addEventListener('click', closeCategoryDrawer);
+      });
+    }
+
+    function scrollBehavior() {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    }
+    var scrollTopButton = document.querySelector('[data-withdrawal-scroll-top]');
+    var scrollBottomButton = document.querySelector('[data-withdrawal-scroll-bottom]');
+    if (scrollTopButton) scrollTopButton.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: scrollBehavior() });
+    });
+    if (scrollBottomButton && summary) scrollBottomButton.addEventListener('click', function () {
+      summary.scrollIntoView({ block: 'end', behavior: scrollBehavior() });
+    });
+
+    form.addEventListener('focusin', function (event) {
+      if (event.target.closest && event.target.closest('[data-withdrawal-row]')) {
+        document.body.classList.add('is-editing');
+      }
+    });
+    form.addEventListener('focusout', function () {
+      window.setTimeout(function () {
+        var focused = document.activeElement;
+        if (!focused || !focused.closest || !focused.closest('[data-withdrawal-row]')) {
+          document.body.classList.remove('is-editing');
+        }
+      }, 0);
+    });
 
     rows.forEach(function (row) {
       var quantityInput = row.querySelector('[data-qty-input]');
@@ -317,10 +393,15 @@
       finalSubmitTrigger.addEventListener('click', function (event) {
         event.preventDefault();
         syncActiveNote();
-        if (!form.reportValidity() || !validateWithdrawal()) return;
+        if (!validateWithdrawal() || !validNativeInputs()) return;
         openSubmitDialog();
       });
     }
+    var saveButton = document.getElementById('save-btn');
+    if (saveButton) saveButton.addEventListener('click', function (event) {
+      syncActiveNote();
+      if (!validateWithdrawal() || !validNativeInputs()) event.preventDefault();
+    });
     if (submitDialog) {
       submitDialog.querySelectorAll('[data-close-submit-dialog]').forEach(function (button) {
         button.addEventListener('click', closeSubmitDialog);
@@ -335,10 +416,12 @@
     });
 
     document.addEventListener('keydown', function (event) {
-      var openDialog = isDialogOpen(noteDialog) ? noteDialog : (isDialogOpen(submitDialog) ? submitDialog : null);
+      var openDialog = isDialogOpen(noteDialog) ? noteDialog
+        : (isDialogOpen(submitDialog) ? submitDialog : (isDialogOpen(categoryDrawer) ? categoryDrawer : null));
       if (event.key === 'Escape') {
         if (openDialog === noteDialog) closeNoteEditor();
         if (openDialog === submitDialog) closeSubmitDialog();
+        if (openDialog === categoryDrawer) closeCategoryDrawer();
         return;
       }
       if (event.key === 'Tab' && openDialog) {
