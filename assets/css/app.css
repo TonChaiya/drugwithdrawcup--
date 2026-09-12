@@ -2042,6 +2042,14 @@
   opacity: .65;
 }
 
+@media (max-width: 800px) {
+  /* Narrow layouts have a category trigger in the toolbar; the floating
+     shortcuts otherwise cover row inputs and the draft/submit actions. */
+  .withdrawal-utility {
+    display: none;
+  }
+}
+
 @media (max-width: 700px) {
   .drug-entry__medicine {
     order: 1;
