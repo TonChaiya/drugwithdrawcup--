@@ -1820,6 +1820,7 @@
 
 .withdrawal-summary {
   margin-top: 18px;
+  scroll-margin-top: 82px;
   padding: 20px 22px;
   display: flex;
   align-items: center;

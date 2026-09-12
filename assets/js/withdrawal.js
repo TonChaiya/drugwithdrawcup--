@@ -345,7 +345,7 @@
       window.scrollTo({ top: 0, behavior: scrollBehavior() });
     });
     if (scrollBottomButton && summary) scrollBottomButton.addEventListener('click', function () {
-      summary.scrollIntoView({ block: 'end', behavior: scrollBehavior() });
+      summary.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
     });
 
     form.addEventListener('focusin', function (event) {
