@@ -1393,6 +1393,11 @@
 }
 
 /* Withdrawal dialogs */
+.withdrawal-dialog,
+.withdrawal-dialog * {
+  box-sizing: border-box;
+}
+
 .withdrawal-dialog {
   position: fixed;
   inset: 0;
