@@ -58,6 +58,8 @@ try {
   $hasItem = false;
   $missingStocks = [];
   foreach ($qtys as $did => $q) {
+    // The full medicine form posts empty quantities for every unselected row.
+    if (is_string($q) && trim($q) === '') continue;
     $q = bounded_non_negative_int($q, 1000000); $did = (int)$did; $n = bounded_plain_text($notes[$did] ?? '', 255);
     if ($q === null || $did <= 0 || $n === null) {
       $missingStocks[] = $did > 0 ? $did : 0;
