@@ -35,7 +35,7 @@ if (!$withdrawalId) {
 
 try {
     $withdrawalStmt = $pdo->prepare(
-        'SELECT id, host_code, withdraw_no
+        'SELECT id, host_code, withdraw_no, status
          FROM withdrawals
          WHERE id = ?
          LIMIT 1'
@@ -53,14 +53,19 @@ try {
         exit('ไม่มีสิทธิ์ส่งออกข้อมูลของสถานบริการอื่น');
     }
 
+    if ($withdrawal['status'] !== 'approved') {
+        http_response_code(403);
+        exit('ส่งออก INVC ได้เฉพาะใบเบิกที่อนุมัติแล้ว');
+    }
+
     // Deliberately use both snapshots only. Falling back to current master data
     // could export a changed code or pack size for an older withdrawal.
     $itemStmt = $pdo->prepare(
         'SELECT wi.id,
                 wi.working_code_snapshot,
-                wi.quantity,
+                wi.delivered_quantity,
                 wi.pack_size_snapshot,
-                (CAST(wi.quantity AS DECIMAL(20,4)) * CAST(wi.pack_size_snapshot AS DECIMAL(20,4))) AS qty_disp
+                (CAST(wi.delivered_quantity AS DECIMAL(20,4)) * CAST(wi.pack_size_snapshot AS DECIMAL(20,4))) AS qty_disp
          FROM withdrawal_items wi
          WHERE wi.withdrawal_id = ?
          ORDER BY wi.id ASC'
@@ -72,17 +77,21 @@ try {
         invc_export_fail($withdrawalId, 'ใบเบิกนี้ยังไม่มีรายการยา จึงไม่สามารถ Export ไป INVC ได้');
     }
 
-    foreach ($items as $index => &$item) {
+    $exportItems = [];
+    foreach ($items as $index => $item) {
         $line = $index + 1;
+        $delivered = (int)$item['delivered_quantity'];
+        if ($delivered === 0) {
+            continue;
+        }
         $workingCode = trim((string)$item['working_code_snapshot']);
         $packSize = trim((string)$item['pack_size_snapshot']);
-        $quantity = (int)$item['quantity'];
         $qtyDisp = invc_normalize_decimal((string)$item['qty_disp']);
 
         if ($workingCode === '' || strlen($workingCode) > 100 || preg_match('/[\x00-\x1F\x7F]/', $workingCode)) {
             invc_export_fail($withdrawalId, 'Export ไม่สำเร็จ: รหัสยาของรายการลำดับที่ ' . $line . ' ไม่ครบหรือไม่ถูกต้อง');
         }
-        if ($quantity <= 0 || !preg_match('/^\d+(?:\.\d+)?$/', $packSize) || (float)$packSize <= 0) {
+        if ($delivered < 0 || !preg_match('/^\d+(?:\.\d+)?$/', $packSize) || (float)$packSize <= 0) {
             invc_export_fail($withdrawalId, 'Export ไม่สำเร็จ: จำนวนหรือขนาดบรรจุของรายการลำดับที่ ' . $line . ' ไม่ถูกต้อง');
         }
         if (!ctype_digit($qtyDisp) || (int)$qtyDisp <= 0) {
@@ -93,8 +102,12 @@ try {
             invc_export_fail($withdrawalId, 'Export ไม่สำเร็จ: QTY_DISP ของรายการลำดับที่ ' . $line . ' ยาวเกินขีดจำกัดความแม่นยำของ Excel');
         }
         $item['_qty_disp_normalized'] = $qtyDisp;
+        $exportItems[] = $item;
     }
-    unset($item);
+
+    if (!$exportItems) {
+        invc_export_fail($withdrawalId, 'ใบเบิกที่อนุมัตินี้ไม่มีรายการที่จ่ายยาจริง จึงไม่สร้างไฟล์ INVC');
+    }
 
     $autoload = __DIR__ . '/vendor/autoload.php';
     if (!is_file($autoload)) {
@@ -110,7 +123,7 @@ try {
     $sheet->setCellValueExplicit('C1', 'WORKING_CODE', PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
 
     $row = 2;
-    foreach ($items as $item) {
+    foreach ($exportItems as $item) {
         $qtyDisp = $item['_qty_disp_normalized'];
 
         $sheet->setCellValueExplicit('A' . $row, '', PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);

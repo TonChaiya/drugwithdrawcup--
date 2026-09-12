@@ -442,109 +442,75 @@ for ($i = 1; $i <= 3; $i++) {
   }
 </style>
 </head>
-<body class="bg-slate-50">
+<body class="app-page approval-page">
   <?php include __DIR__ . '/includes/nav.php'; ?>
-  <div class="max-w-5xl mx-auto">
-    <div class="bg-white p-6 rounded-lg shadow mb-6">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div>
-          <h1 class="text-2xl font-semibold"><?php echo e(format_withdraw_code($w['withdraw_no'])); ?> <span class="text-base font-normal text-gray-500">/ <?php echo e($withdrawalStatusLabels[$w['status']] ?? $w['status']); ?></span></h1>
-          <div class="text-sm text-gray-600 mt-1"><?php echo e($w['facility_name'] ?? ($w['user_name'] . ' (' . $w['username'] . ')')); ?></div>
-          <div class="text-xs text-gray-400 mt-1">สร้างเมื่อ: <?php echo e($w['created_at']); ?></div>
-          <div class="text-sm text-gray-600 mt-2"><strong>สถานะ:</strong> <?php echo e($withdrawalStatusLabels[$w['status']] ?? $w['status']); ?></div>
-          <div class="text-sm text-gray-600 mt-1"><strong>สร้างโดย:</strong> <?php echo e($w['user_name'] . ' (' . $w['username'] . ')'); ?></div>
-        </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <?php if((($w['status'] === 'draft' && $isOwner) || ($isAdmin && $w['status'] !== 'approved'))): ?>
-            <button id="save-btn" type="button" class="inline-flex items-center justify-center text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded">บันทึก</button>
-          <?php endif; ?>
-
-          <a href="printpdf/print_withdrawal.php?id=<?php echo $id; ?>" target="_blank" class="inline-flex items-center justify-center text-sm h-9 leading-none whitespace-nowrap bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded">พิมพ์ใบเบิก (PDF)</a>
-          <?php if (!empty($items)): ?>
-            <a href="export_withdrawal_invc.php?id=<?php echo $id; ?>"
-               class="inline-flex items-center justify-center text-sm h-9 leading-none whitespace-nowrap bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded"
-               title="ใช้จำนวนที่ขอเบิกคูณขนาดบรรจุจากข้อมูลที่บันทึกไว้ล่าสุด"
-               onclick="return confirm('ไฟล์ INVC จะใช้ข้อมูลที่บันทึกไว้ล่าสุด หากเพิ่งแก้จำนวน กรุณากดบันทึกก่อน ต้องการ Export ต่อหรือไม่?')">
-              Export .xlsx to INVC
-            </a>
-          <?php endif; ?>
-
-
-
-
-
-          <?php if($w['status'] === 'draft' && ($isOwner || $isAdmin)): ?>
-            <form method="post" class="inline-block">
-              <input type="hidden" name="csrf" value="<?php echo e(csrf_token()); ?>">
-              <button name="action" value="submit" class="inline-flex items-center justify-center text-sm h-9 leading-none whitespace-nowrap bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">ส่งเพื่อขออนุมัติใบเบิก</button>
-            </form>
-          <?php endif; ?>
-
-          <?php if($canCancelWithdrawal): ?>
-            <button type="button" onclick="openCancelWithdrawalModal()"
-              class="inline-flex items-center justify-center text-sm h-9 leading-none whitespace-nowrap border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 px-3 py-2 rounded">
-              ยกเลิกใบเบิก
-            </button>
-          <?php endif; ?>
-
-          <?php if($isAdmin && $w['status'] === 'submitted'): ?>
-            <button id="approve-btn" type="button" class="inline-flex items-center justify-center text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded">อนุมัติ</button>
-          <?php endif; ?>
-
-          <?php if($isAdmin): ?>
-            <button type="button" onclick="openStatusChangeModal()"
-              class="inline-flex items-center justify-center text-sm h-9 leading-none whitespace-nowrap border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 px-3 py-2 rounded">
-              เปลี่ยนสถานะ
-            </button>
-          <?php endif; ?>
-        </div>
+  <main class="approval-workspace app-ui">
+    <header class="approval-heading">
+      <div class="approval-heading__title">
+        <h1>ใบเบิกยา <?php echo e(format_withdraw_code($w['withdraw_no'])); ?></h1>
+        <span class="approval-status approval-status--<?php echo e($w['status']); ?>"><?php echo e($withdrawalStatusLabels[$w['status']] ?? $w['status']); ?></span>
       </div>
-    </div>
+      <p class="approval-heading__meta">
+        <span><?php echo e($w['facility_name'] ?? ($w['user_name'] . ' (' . $w['username'] . ')')); ?></span>
+        <span>สร้างโดย <?php echo e($w['user_name'] . ' (' . $w['username'] . ')'); ?></span>
+        <span><?php echo e(format_thai_datetime($w['created_at'])); ?></span>
+      </p>
+      <div class="approval-heading__tools" aria-label="ส่งออกเอกสาร">
+        <a href="printpdf/print_withdrawal.php?id=<?php echo $id; ?>" target="_blank" rel="noopener" class="approval-link">พิมพ์ใบเบิก (PDF)</a>
+        <?php if ($w['status'] === 'approved'): ?>
+          <a href="export_withdrawal_invc.php?id=<?php echo $id; ?>" class="approval-link"
+             title="ใช้จำนวนจ่ายจริงที่อนุมัติแล้วคูณขนาดบรรจุที่บันทึกไว้ในใบเบิก">Export INVC (.xlsx)</a>
+          <span class="approval-heading__export-note">ใช้จำนวนจ่ายจริงที่อนุมัติแล้ว</span>
+        <?php endif; ?>
+        <?php if ($canCancelWithdrawal || $isAdmin): ?>
+          <div class="approval-heading__management" aria-label="การจัดการสถานะใบเบิก">
+            <?php if ($isAdmin): ?>
+              <button type="button" onclick="openStatusChangeModal()" class="approval-link">เปลี่ยนสถานะ</button>
+            <?php endif; ?>
+            <?php if ($canCancelWithdrawal): ?>
+              <button type="button" onclick="openCancelWithdrawalModal()" class="approval-link approval-link--danger">ยกเลิกใบเบิก</button>
+            <?php endif; ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="md:col-span-3 bg-white p-4 rounded-lg shadow">
+    <?php if (!empty($_SESSION['flash'])): ?>
+      <div class="approval-feedback" role="status"><?php echo e($_SESSION['flash']); ?></div>
+      <?php unset($_SESSION['flash']); ?>
+    <?php endif; ?>
+
+    <section class="approval-list" aria-labelledby="approvalListTitle">
           <form id="items-form" method="post">
             <input type="hidden" name="csrf" value="<?php echo e(csrf_token()); ?>">
             <input type="hidden" name="action" id="items-action" value="">
-          <div class="space-y-3">
+          <div>
                 <?php if($w['status'] === 'draft' && ($isOwner || $isAdmin)): ?>
-                  <div class="mb-3">
-                    <label class="text-sm font-medium text-gray-700">เพิ่มรายการ</label>
-                    <div class="flex gap-2 mt-2">
-                      <input id="drug-search" type="search" placeholder="ค้นหารหัสหรือชื่อยา" class="border rounded px-3 py-2 w-full text-sm">
-                      <button id="clear-search" type="button" class="inline-flex items-center justify-center text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">ล้าง</button>
+                  <div class="approval-search">
+                    <label for="drug-search">เพิ่มรายการยา</label>
+                    <div class="approval-search__controls">
+                      <input id="drug-search" type="search" placeholder="ค้นหารหัสหรือชื่อยา" autocomplete="off">
+                      <button id="clear-search" type="button" class="approval-link">ล้าง</button>
                     </div>
-                    <div id="search-results" class="mt-2 bg-white border rounded max-h-52 overflow-auto hidden"></div>
+                    <div id="search-results" class="approval-search__results hidden"></div>
                     <input type="hidden" id="csrf-token" value="<?php echo e(csrf_token()); ?>">
                   </div>
                 <?php endif; ?>
-            <table class="w-full text-sm border-collapse mt-4">
-
-            <h2 class="text-lg font-semibold text-green-700 mt-8 mb-2">
-                รายการที่อนุมัติเบิก
-            </h2>
+            <h2 id="approvalListTitle" class="approval-section-title"><?php echo $w['status'] === 'approved' ? 'รายการที่อนุมัติเบิก' : 'รายการยาในใบเบิก'; ?> <small><?php echo count($w['status'] === 'approved' ? $approvedItems : $items); ?> รายการ</small></h2>
+            <table class="approval-table" aria-label="<?php echo $w['status'] === 'approved' ? 'รายการที่อนุมัติเบิก' : 'รายการยาในใบเบิก'; ?>">
     <thead>
-        <tr class="bg-gray-100 border-b text-xs font-medium text-gray-700">
-            <th class="border px-2 py-2 text-center w-10">ลำดับ</th>
-            <th class="border px-2 py-2 w-20">รหัส</th>
-            <th class="border px-2 py-2 w-64">รายการ</th>
-            <th class="border px-2 py-2 text-center w-20">จำนวนคงเหลือล่าสุด</th>
-            <th class="border px-2 py-2 text-center w-20">จำนวนที่ขอเบิก</th>
-            <th class="border px-2 py-2 text-center w-24">ขนาดบรรจุ</th>
-            <th class="border px-2 py-2 text-center w-28">จำนวนที่ขอเบิกรวม</th>
-            <th class="border px-2 py-2 text-center w-20">จ่ายจริง</th>
-            <th class="border px-2 py-2 text-center w-28">จำนวนจ่ายรวม</th>
-            <th class="border px-2 py-2 w-52 text-center">หมายเหตุ</th>
+        <tr>
+            <th scope="col">รหัสยา</th><th scope="col">รายการยา</th><th scope="col">คงเหลือ</th>
+            <th scope="col">ขอเบิก</th><th scope="col">ขนาดบรรจุ</th><th scope="col">รวมขอ</th>
+            <th scope="col" class="approval-table__delivered">จ่ายจริง</th><th scope="col">รวมจ่าย</th><th scope="col">หมายเหตุ</th>
         </tr>
     </thead>
 
     <tbody id="items-tbody">
-<?php $i = 1; ?>
 <?php
 // ถ้าอนุมัติแล้ว → ให้แสดงเฉพาะรายการอนุมัติในกลุ่มแรก
 $showItems = ($w['status'] === 'approved') ? $approvedItems : $items;
 
-$i = 1;
 foreach($showItems as $it):
 ?>
 
@@ -556,21 +522,10 @@ foreach($showItems as $it):
     $initial_current_stock = (int)$it['current_stock_snapshot'];
     $initialTotal = $packNum * $initialQty;
 ?>
-<tr class="border-b hover:bg-gray-50" data-drug-id="<?php echo $it['drug_item_id']; ?>">
-
-    <!-- ลำดับ -->
-    <td class="border px-2 py-2 text-center">
-        <?php echo $i++; ?>
-    </td>
-
-    <!-- รหัส -->
-    <td class="border px-2 py-2 text-center">
-        <?php echo e($it['working_code']); ?>
-    </td>
-
-    <!-- รายการยา -->
-    <td class="border px-2 py-2">
-        <div class="font-medium"><?php echo e($it['name']); ?></div>
+<tr class="approval-row" data-drug-id="<?php echo (int)$it['drug_item_id']; ?>">
+    <td class="approval-row__code"><span><?php echo e($it['working_code']); ?></span></td>
+    <td class="approval-row__medicine">
+        <strong class="approval-row__name"><?php echo e($it['name']); ?></strong>
 
         <?php
             $colorClasses = [1=>'text-red-600',2=>'text-amber-600',3=>'text-emerald-600'];
@@ -582,16 +537,19 @@ foreach($showItems as $it):
             }
             $rateHtml = "Rate 3เดือน " . implode(', ', $partsHtml);
         ?>
-        <div class="text-xs text-gray-500 mt-1"><?php echo $rateHtml; ?> <?php echo e($unitVal); ?></div>
+        <div class="approval-row__context">
+          <span class="approval-row__mobile-pack">บรรจุ <?php echo e($rawPack . ' ' . $unitVal); ?></span>
+          <span class="approval-row__history"><?php echo $rateHtml; ?> <?php echo e($unitVal); ?></span>
+        </div>
     </td>
 
-            <!-- คงเหลือล่าสุด -->
-            <td class="border px-2 py-1 text-center">
+            <td class="approval-row__stock" data-label="คงเหลือ">
                 <?php if($w['status']==='draft' && $_SESSION['user']['id']==$w['user_id']): ?>
                     <input type="number"
                            name="current_stock[<?php echo $it['wi_id']; ?>]"
                            value="<?php echo $initial_current_stock; ?>"
-                           class="w-16 border rounded px-1 py-1 text-right bg-yellow-50"
+                           min="0" inputmode="numeric" aria-label="คงเหลือ <?php echo e($it['working_code']); ?>"
+                           class="approval-number approval-number--stock"
                            data-packnum="<?php echo $packNum; ?>"
                            data-id="<?php echo $it['wi_id']; ?>">
                 <?php else: ?>
@@ -599,13 +557,13 @@ foreach($showItems as $it):
                 <?php endif; ?>
             </td>
 
-            <!-- จำนวนที่ขอเบิก -->
-            <td class="border px-2 py-1 text-center">
+            <td class="approval-row__requested" data-label="ขอเบิก">
                 <?php if($w['status']==='draft' && $_SESSION['user']['id']==$w['user_id']): ?>
                     <input type="number"
                            name="qty[<?php echo $it['wi_id']; ?>]"
                            value="<?php echo $initialQty; ?>"
-                           class="qty-input w-16 border rounded px-1 py-1 text-right bg-yellow-50"
+                           min="0" inputmode="numeric" aria-label="ขอเบิก <?php echo e($it['working_code']); ?>"
+                           class="qty-input approval-number"
                            data-packnum="<?php echo $packNum; ?>"
                            data-unit="<?php echo e($unitVal); ?>"
                            data-id="<?php echo $it['wi_id']; ?>">
@@ -614,23 +572,22 @@ foreach($showItems as $it):
                 <?php endif; ?>
             </td>
 
-            <!-- ขนาดบรรจุ -->
-            <td class="border px-2 py-2 text-center">
-                <?php echo e($rawPack); ?>
+            <td class="approval-row__pack" data-label="ขนาดบรรจุ">
+                บรรจุ <?php echo e($rawPack . ' ' . $unitVal); ?>
             </td>
 
-            <!-- รวมที่ขอเบิก -->
-            <td class="border px-2 py-2 text-center" id="total-<?php echo $it['wi_id']; ?>">
+            <td class="approval-row__requested-total" data-label="รวมขอ" id="total-<?php echo $it['wi_id']; ?>">
                 <?php echo e($initialTotal . ' ' . $unitVal); ?>
             </td>
 
-            <!-- จ่ายจริง -->
-            <td class="border px-2 py-1 text-center">
+            <td class="approval-row__delivered" data-label="จ่ายจริง">
                 <?php if($isAdmin && $w['status']==='submitted'): ?>
                     <input type="number"
                       name="delivered[<?php echo $it['wi_id']; ?>]"
                       value="<?php echo (int)$it['delivered_quantity']; ?>"
-                      class="w-16 border rounded px-1 py-1 text-right bg-sky-50 delivered-input"
+                      min="0" max="<?php echo $initialQty; ?>" inputmode="numeric"
+                      aria-label="จ่ายจริง <?php echo e($it['working_code']); ?>"
+                      class="approval-number approval-number--delivered delivered-input"
                       data-packnum="<?php echo $packNum; ?>"
                       data-unit="<?php echo e($unitVal); ?>"
                       data-id="<?php echo $it['wi_id']; ?>">
@@ -640,16 +597,14 @@ foreach($showItems as $it):
                 <?php endif; ?>
             </td>
 
-            <!-- รวมที่จ่าย -->
-            <td class="border px-2 py-2 text-center" id="delivered-total-<?php echo $it['wi_id']; ?>">
+            <td class="approval-row__delivered-total" data-label="รวมจ่าย" id="delivered-total-<?php echo $it['wi_id']; ?>">
                 <?php echo e(($packNum * (int)$it['delivered_quantity']).' '.$unitVal); ?>
             </td>
 
-            <!-- หมายเหตุ -->
-            <td class="border px-2 py-2">
-                <div class="flex items-center gap-2">
+            <td class="approval-row__note" data-label="หมายเหตุ">
+                <div class="approval-row__note-content">
 
-                    <div class="flex-1">
+                    <div class="approval-row__note-field">
                     <?php if($w['status']==='draft' || ($isAdmin && $w['status']==='submitted')): ?>
                         <input type="hidden"
                                name="note[<?php echo $it['wi_id']; ?>]"
@@ -657,13 +612,14 @@ foreach($showItems as $it):
                                class="note-edit-value">
                         <input type="text"
                                value="<?php echo e($it['note']); ?>"
-                               class="note-edit-input w-full border rounded px-2 py-1 bg-yellow-50 cursor-pointer"
+                               class="note-edit-input approval-note-input"
                                readonly
+                               aria-label="แก้หมายเหตุ <?php echo e($it['working_code']); ?>"
                                data-note-id="<?php echo (int)$it['wi_id']; ?>"
                                data-note-title="<?php echo e($it['working_code'] . ' - ' . $it['name']); ?>"
                                data-note-subtitle="รายการ #<?php echo (int)$it['wi_id']; ?>">
                     <?php else: ?>
-                        <div class="text-sm whitespace-pre-line">
+                        <div class="approval-note-readonly">
                             <?php echo e($it['note']); ?>
                         </div>
                     <?php endif; ?>
@@ -679,7 +635,7 @@ foreach($showItems as $it):
                     <!-- ลบรายการ -->
                     <?php if(($w['status']==='draft') && ($isOwner || $isAdmin)): ?>
                     <button type="button"
-                      class="delete-item-btn inline-flex items-center justify-center text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded"
+                      class="delete-item-btn approval-delete"
                       data-wi-id="<?php echo (int)$it['wi_id']; ?>">ลบ</button>
                     <?php endif; ?>
 
@@ -693,27 +649,19 @@ foreach($showItems as $it):
 
 <?php if($w['status'] === 'approved' && count($rejectedItems) > 0): ?>
 
-<h2 class="text-lg font-semibold text-red-700 mt-8 mb-2">
-  รายการที่ไม่ได้รับการอนุมัติ
-</h2>
+<h2 class="approval-section-title approval-section-title--rejected">รายการที่ไม่ได้รับการอนุมัติ <small><?php echo count($rejectedItems); ?> รายการ</small></h2>
 
-<table class="w-full text-sm border-collapse border border-red-300">
+<table class="approval-table approval-table--rejected" aria-label="รายการที่ไม่ได้รับการอนุมัติ">
     <thead>
-        <tr class="bg-red-50 border-b text-xs font-medium text-red-700">
-            <th class="border px-2 py-2 text-center w-10">ลำดับ</th>
-            <th class="border px-2 py-2 w-20">รหัส</th>
-            <th class="border px-2 py-2 w-64">รายการ</th>
-            <th class="border px-2 py-2 text-center w-20">จำนวนที่ขอเบิก</th>
-            <th class="border px-2 py-2 text-center w-24">ขนาดบรรจุ</th>
-            <th class="border px-2 py-2 text-center w-28">จำนวนที่ขอเบิกรวม</th>
-            <th class="border px-2 py-2 text-center w-20">จ่ายจริง</th>
-            <th class="border px-2 py-2 text-center w-28">จำนวนจ่ายรวม</th>
-            <th class="border px-2 py-2 w-52 text-center">หมายเหตุ</th>
+        <tr>
+            <th scope="col">รหัสยา</th><th scope="col">รายการยา</th><th scope="col">คงเหลือ</th>
+            <th scope="col">ขอเบิก</th><th scope="col">ขนาดบรรจุ</th><th scope="col">รวมขอ</th>
+            <th scope="col">จ่ายจริง</th><th scope="col">รวมจ่าย</th><th scope="col">หมายเหตุ</th>
         </tr>
     </thead>
 
     <tbody>
-        <?php $j = 1; foreach($rejectedItems as $it): ?>
+        <?php foreach($rejectedItems as $it): ?>
         <?php
             $rawPack = trim((string)($it['pack_size_snapshot'] ?? $it['current_pack']));
             $unitVal = trim((string)($it['unit_snapshot'] ?? $it['current_unit']));
@@ -722,16 +670,25 @@ foreach($showItems as $it):
             $initial_current_stock = (int)$it['current_stock_snapshot'];
             $initialTotal = $packNum * $initialQty;
         ?>
-        <tr class="border-b hover:bg-gray-50">
-            <td class="border px-2 py-2 text-center"><?php echo $j++; ?></td>
-            <td class="border px-2 py-2 text-center"><?php echo e($it['working_code']); ?></td>
-            <td class="border px-2 py-2"><?php echo e($it['name']); ?></td>
-            <td class="border px-2 py-2 text-center"><?php echo $initialQty; ?></td>
-            <td class="border px-2 py-2 text-center"><?php echo e($rawPack); ?></td>
-            <td class="border px-2 py-2 text-center"><?php echo e($initialTotal . ' ' . $unitVal); ?></td>
-            <td class="border px-2 py-2 text-center">0</td>
-            <td class="border px-2 py-2 text-center">0 <?php echo e($unitVal); ?></td>
-            <td class="border px-2 py-2"><?php echo e($it['note']); ?></td>
+        <tr class="approval-row">
+            <td class="approval-row__code"><span><?php echo e($it['working_code']); ?></span></td>
+            <td class="approval-row__medicine">
+              <strong class="approval-row__name"><?php echo e($it['name']); ?></strong>
+              <div class="approval-row__context">
+                <span class="approval-row__mobile-pack">บรรจุ <?php echo e($rawPack . ' ' . $unitVal); ?></span>
+                <span class="approval-row__history">Rate 3เดือน
+                <?php for ($mi = 1; $mi <= 3; $mi++): ?>
+                  <?php echo e($monthLabels[$mi]); ?>=<?php echo (int)($monthlyTotals[$mi][$it['drug_item_id']] ?? 0); ?><?php echo $mi < 3 ? ' · ' : ''; ?>
+                <?php endfor; ?> <?php echo e($unitVal); ?></span>
+              </div>
+            </td>
+            <td class="approval-row__stock" data-label="คงเหลือ"><?php echo $initial_current_stock; ?></td>
+            <td class="approval-row__requested" data-label="ขอเบิก"><?php echo $initialQty; ?></td>
+            <td class="approval-row__pack" data-label="ขนาดบรรจุ">บรรจุ <?php echo e($rawPack . ' ' . $unitVal); ?></td>
+            <td class="approval-row__requested-total" data-label="รวมขอ"><?php echo e($initialTotal . ' ' . $unitVal); ?></td>
+            <td class="approval-row__delivered" data-label="จ่ายจริง">0</td>
+            <td class="approval-row__delivered-total" data-label="รวมจ่าย">0 <?php echo e($unitVal); ?></td>
+            <td class="approval-row__note" data-label="หมายเหตุ"><span class="approval-note-readonly"><?php echo e($it['note']); ?></span></td>
         </tr>
         <?php endforeach; ?>
     </tbody>
@@ -828,35 +785,34 @@ foreach($showItems as $it):
                   const safePackNum = Number.isFinite(packNum) ? packNum : 0;
                   const unit = drug.unit || '';
                   const row = document.createElement('tr');
-                  row.className = 'border-b hover:bg-gray-50 bg-emerald-50/60';
+                  row.className = 'approval-row approval-row--pending';
                   row.setAttribute('data-drug-id', drug.id);
                   row.setAttribute('data-pending-row', '1');
                   row.innerHTML = `
-                    <td class="border px-2 py-2 text-center">
-                      <span class="text-xs text-emerald-700 font-medium">ใหม่</span>
+                    <td class="approval-row__code">
+                      <span>${escapeHtml(drug.working_code || '')}</span>
                       <input type="hidden" name="new_drug_item_id[${token}]" value="${escapeHtml(drug.id)}">
                     </td>
-                    <td class="border px-2 py-2 text-center">${escapeHtml(drug.working_code || '')}</td>
-                    <td class="border px-2 py-2">
-                      <div class="font-medium">${escapeHtml(drug.name || '')}</div>
-                      <div class="text-xs text-emerald-700 mt-1">รอบันทึก</div>
+                    <td class="approval-row__medicine">
+                      <strong class="approval-row__name">${escapeHtml(drug.name || '')}</strong>
+                      <div class="approval-row__context"><span class="approval-row__mobile-pack">บรรจุ ${escapeHtml(packRaw)} ${escapeHtml(unit)}</span><span>ใหม่ · รอบันทึก</span></div>
                     </td>
-                    <td class="border px-2 py-1 text-center">
-                      <input type="number" name="new_current_stock[${token}]" value="0" class="w-16 border rounded px-1 py-1 text-right bg-yellow-50">
+                    <td class="approval-row__stock" data-label="คงเหลือ">
+                      <input type="number" name="new_current_stock[${token}]" value="0" min="0" inputmode="numeric" aria-label="คงเหลือ ${escapeHtml(drug.working_code || '')}" class="approval-number approval-number--stock">
                     </td>
-                    <td class="border px-2 py-1 text-center">
-                      <input type="number" name="new_qty[${token}]" value="1"
-                        class="qty-input w-16 border rounded px-1 py-1 text-right bg-yellow-50"
+                    <td class="approval-row__requested" data-label="ขอเบิก">
+                      <input type="number" name="new_qty[${token}]" value="1" min="0" inputmode="numeric" aria-label="ขอเบิก ${escapeHtml(drug.working_code || '')}"
+                        class="qty-input approval-number"
                         data-packnum="${escapeHtml(safePackNum)}" data-unit="${escapeHtml(unit)}" data-id="${token}">
                     </td>
-                    <td class="border px-2 py-2 text-center">${escapeHtml(packRaw)}</td>
-                    <td class="border px-2 py-2 text-center" id="total-${token}">${formatPendingNumber(safePackNum)}${unit ? ' ' + escapeHtml(unit) : ''}</td>
-                    <td class="border px-2 py-1 text-center">0</td>
-                    <td class="border px-2 py-2 text-center">0${unit ? ' ' + escapeHtml(unit) : ''}</td>
-                    <td class="border px-2 py-2">
-                      <div class="flex items-center gap-2">
-                        <input type="text" name="new_note[${token}]" value="" class="flex-1 w-full border rounded px-2 py-1 bg-yellow-50">
-                        <button type="button" class="remove-pending-item inline-flex items-center justify-center text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded">ลบ</button>
+                    <td class="approval-row__pack" data-label="ขนาดบรรจุ">บรรจุ ${escapeHtml(packRaw)} ${escapeHtml(unit)}</td>
+                    <td class="approval-row__requested-total" data-label="รวมขอ" id="total-${token}">${formatPendingNumber(safePackNum)}${unit ? ' ' + escapeHtml(unit) : ''}</td>
+                    <td class="approval-row__delivered" data-label="จ่ายจริง">0</td>
+                    <td class="approval-row__delivered-total" data-label="รวมจ่าย">0${unit ? ' ' + escapeHtml(unit) : ''}</td>
+                    <td class="approval-row__note" data-label="หมายเหตุ">
+                      <div class="approval-row__note-content">
+                        <input type="text" name="new_note[${token}]" value="" aria-label="หมายเหตุ ${escapeHtml(drug.working_code || '')}" class="approval-note-input">
+                        <button type="button" class="remove-pending-item approval-delete">ลบ</button>
                       </div>
                     </td>
                   `;
@@ -974,6 +930,14 @@ foreach($showItems as $it):
                   if (Number.isInteger(n)) return n.toString();
                   return n.toFixed(2).replace(/\.00$/, '');
                 }
+                function updateApprovalSummary(){
+                  const inputs = document.querySelectorAll('.delivered-input');
+                  const delivered = Array.from(inputs).filter(function(input){ return Number(input.value) > 0; }).length;
+                  const deliveredCount = document.getElementById('approvalDeliveredCount');
+                  const zeroCount = document.getElementById('approvalZeroCount');
+                  if (deliveredCount) deliveredCount.textContent = String(delivered);
+                  if (zeroCount) zeroCount.textContent = String(inputs.length - delivered);
+                }
                 document.querySelectorAll('.delivered-input').forEach(function(inp){
                   function update(){
                     var val = parseFloat(inp.value || '0');
@@ -987,8 +951,10 @@ foreach($showItems as $it):
                     if (span){ span.textContent = formatNumber(total) + (unit ? ' ' + unit : ''); }
                   }
                   inp.addEventListener('input', update);
+                  inp.addEventListener('input', updateApprovalSummary);
                   update();
                 });
+                updateApprovalSummary();
               })();
             </script>
             <script>
@@ -1059,11 +1025,37 @@ foreach($showItems as $it):
                 }
               })();
             </script>
-      </div>
+    </section>
 
-      <!-- sidebar info moved to header area (above items) -->
-    </div>
-  </div>
+    <?php if ($isAdmin && $w['status'] === 'submitted'): ?>
+      <section class="approval-summary" aria-labelledby="approvalSummaryTitle">
+        <div>
+          <h2 id="approvalSummaryTitle">สรุปการอนุมัติ</h2>
+          <p aria-live="polite">รายการทั้งหมด <?php echo count($items); ?> • ระบุจำนวนจ่าย <span id="approvalDeliveredCount">0</span> • ไม่จ่าย <span id="approvalZeroCount"><?php echo count($items); ?></span></p>
+        </div>
+        <div class="approval-summary__actions">
+          <button id="save-btn" type="button" class="approval-button approval-button--secondary">บันทึกการแก้ไข</button>
+          <button id="approve-btn" type="button" class="approval-button approval-button--primary">อนุมัติใบเบิก</button>
+        </div>
+      </section>
+    <?php elseif ($w['status'] === 'draft' && ($isOwner || $isAdmin)): ?>
+      <section class="approval-summary" aria-label="การดำเนินการใบเบิก">
+        <div><h2><?php echo $w['status'] === 'draft' ? 'ตรวจสอบรายการก่อนส่ง' : 'บันทึกการแก้ไข'; ?></h2></div>
+        <div class="approval-summary__actions">
+          <?php if (($w['status'] === 'draft' && $isOwner) || $isAdmin): ?>
+            <button id="save-btn" type="button" class="approval-button approval-button--secondary">บันทึกการแก้ไข</button>
+          <?php endif; ?>
+          <?php if ($w['status'] === 'draft' && ($isOwner || $isAdmin)): ?>
+            <form method="post">
+              <input type="hidden" name="csrf" value="<?php echo e(csrf_token()); ?>">
+              <button name="action" value="submit" class="approval-button approval-button--primary">ส่งเพื่อขออนุมัติใบเบิก</button>
+            </form>
+          <?php endif; ?>
+        </div>
+      </section>
+    <?php endif; ?>
+
+  </main>
 
 <?php if ($canCancelWithdrawal): ?>
 <!-- Cancel Withdrawal Modal -->
@@ -1175,7 +1167,9 @@ foreach($showItems as $it):
     return valid;
   }
 
+  let cancelReturnFocus = null;
   window.openCancelWithdrawalModal = function(){
+    cancelReturnFocus = document.activeElement;
     hostCodeInput.value = '';
     errorText.classList.add('hidden');
     confirmButton.disabled = true;
@@ -1191,6 +1185,7 @@ foreach($showItems as $it):
     modal.classList.remove('flex');
     document.body.classList.remove('overflow-hidden');
     hostCodeInput.value = '';
+    if (cancelReturnFocus && cancelReturnFocus.isConnected) cancelReturnFocus.focus();
   }
 
   hostCodeInput.addEventListener('input', function(){ validateHostCode(false); });
@@ -1226,7 +1221,9 @@ foreach($showItems as $it):
 
   const currentStatus = <?php echo json_encode($withdrawalStatusLabels[$w['status']] ?? $w['status'], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
+  let statusReturnFocus = null;
   window.openStatusChangeModal = function(){
+    statusReturnFocus = document.activeElement;
     select.value = '';
     warning.textContent = '';
     warning.classList.add('hidden');
@@ -1242,6 +1239,7 @@ foreach($showItems as $it):
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     document.body.classList.remove('overflow-hidden');
+    if (statusReturnFocus && statusReturnFocus.isConnected) statusReturnFocus.focus();
   }
 
   select.addEventListener('change', function(){
@@ -1294,7 +1292,7 @@ foreach($showItems as $it):
 </div>
 
 <!-- Note Edit Modal -->
-<div id="noteEditModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+<div id="noteEditModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="noteEditTitle">
   <div class="absolute inset-0" data-close-note-edit></div>
   <div class="relative bg-white p-6 rounded-lg shadow-xl max-w-3xl w-full mx-4">
     <div class="flex items-start justify-between gap-4 mb-4">
@@ -1368,6 +1366,7 @@ function closeNoteModal(){
     textarea.value = input.value || '';
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
     setTimeout(function(){
       textarea.focus();
       try {
@@ -1377,6 +1376,7 @@ function closeNoteModal(){
   }
 
   function closeEditor(){
+    const returnFocus = activeInput;
     if (activeInput) {
       activeInput.value = textarea.value;
     }
@@ -1386,8 +1386,10 @@ function closeNoteModal(){
     syncAllNoteFields();
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    document.body.classList.remove('overflow-hidden');
     activeInput = null;
     activeHidden = null;
+    if (returnFocus && returnFocus.isConnected) returnFocus.focus();
   }
 
   document.addEventListener('click', function(e){
