@@ -8,6 +8,8 @@ if (!verify_csrf($_POST['csrf_token'] ?? '')) { die('Invalid CSRF'); }
 $user_id = $user['id'];
 $host_code = $user['host_code'] ?? null;
 $action = $_POST['action'] ?? 'submit';
+// Preserve the long-standing draft button value while using one internal action.
+if ($action === 'save') $action = 'draft';
 $qtys = $_POST['qty'] ?? [];
 $notes = $_POST['note'] ?? [];
 $stocks = $_POST['stock'] ?? [];
