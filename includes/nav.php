@@ -23,6 +23,7 @@ $scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
 $navAssetPrefix = str_contains($scriptPath, '/report/') ? '../' : '';
 $navUser = $_SESSION['user'] ?? null;
 $navRole = (string)($navUser['role'] ?? '');
+$navCanWithdraw = $navUser && preg_match('/^[0-9]{5}$/', (string)($navUser['host_code'] ?? ''));
 $navName = (string)($navUser['name'] ?? $navUser['username'] ?? '');
 $navFacility = trim((string)($navUser['facility_name'] ?? ''));
 $navRoleLabel = $navUser && function_exists('role_label') ? role_label($navRole) : '';
@@ -56,7 +57,9 @@ if ($navName !== '' && preg_match('/^./u', $navName, $navInitialMatch)) {
       <a href="<?= BASE_URL ?>report/report.php" class="app-shell__link<?= nav_active('/report/report.php') ?>"<?= nav_current('/report/report.php') ?>>รายงาน</a>
 
       <?php if ($navUser): ?>
-        <a href="<?= BASE_URL ?>withdraw.php" class="app-shell__link<?= nav_active('/withdraw.php') ?>"<?= nav_current('/withdraw.php') ?>>เบิกยา</a>
+        <?php if ($navCanWithdraw): ?>
+          <a href="<?= BASE_URL ?>withdraw.php" class="app-shell__link<?= nav_active('/withdraw.php') ?>"<?= nav_current('/withdraw.php') ?>>เบิกยา</a>
+        <?php endif; ?>
 
         <?php if (in_array($navRole, ['admin', 'superadmin'], true)): ?>
           <a href="<?= BASE_URL ?>admin_all_withdrawals.php" class="app-shell__link<?= nav_active('/admin_all_withdrawals.php') ?>"<?= nav_current('/admin_all_withdrawals.php') ?>>ตรวจใบเบิก</a>
@@ -108,7 +111,9 @@ if ($navName !== '' && preg_match('/^./u', $navName, $navInitialMatch)) {
       <a href="<?= BASE_URL ?>report/report.php" class="app-shell-mobile__link<?= nav_active('/report/report.php') ?>"<?= nav_current('/report/report.php') ?>>รายงาน</a>
 
       <?php if ($navUser): ?>
-        <a href="<?= BASE_URL ?>withdraw.php" class="app-shell-mobile__link<?= nav_active('/withdraw.php') ?>"<?= nav_current('/withdraw.php') ?>>เบิกยา</a>
+        <?php if ($navCanWithdraw): ?>
+          <a href="<?= BASE_URL ?>withdraw.php" class="app-shell-mobile__link<?= nav_active('/withdraw.php') ?>"<?= nav_current('/withdraw.php') ?>>เบิกยา</a>
+        <?php endif; ?>
 
         <?php if (in_array($navRole, ['admin', 'superadmin'], true)): ?>
           <a href="<?= BASE_URL ?>admin_all_withdrawals.php" class="app-shell-mobile__link<?= nav_active('/admin_all_withdrawals.php') ?>"<?= nav_current('/admin_all_withdrawals.php') ?>>ตรวจใบเบิก</a>

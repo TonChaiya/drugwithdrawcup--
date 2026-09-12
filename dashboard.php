@@ -98,7 +98,9 @@ $statusMeta = [
       </div>
     </div>
     <div class="dashboard-actions" aria-label="ทางลัดการทำงาน">
-      <a href="withdraw.php" class="app-btn app-btn--primary">สร้างใบเบิกใหม่</a>
+      <?php if (preg_match('/^[0-9]{5}$/', (string)($user['host_code'] ?? ''))): ?>
+        <a href="withdraw.php" class="app-btn app-btn--primary">สร้างใบเบิกใหม่</a>
+      <?php endif; ?>
       <?php if ($isManager): ?>
         <a href="admin_all_withdrawals.php" class="app-btn app-btn--action">ตรวจใบเบิกรออนุมัติ (<?= (int)$counts['submitted'] ?>)</a>
       <?php endif; ?>

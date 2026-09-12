@@ -3,9 +3,10 @@ require 'includes/db.php';
 require 'includes/auth.php';
 $user = require_login($pdo);
 $host_code = $user['host_code'] ?? null;
-if (!$host_code) { echo 'Missing host_code'; exit; }
-
-$msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
+if (!preg_match('/^[0-9]{5}$/', (string)$host_code)) {
+    http_response_code(403);
+    exit('บัญชีนี้ยังไม่ได้กำหนดรหัสสถานบริการที่ถูกต้อง');
+}
 
 // โหลด type กลุ่มยา (ชื่อกลุ่ม ฯลฯ)
 $drugTypes = require __DIR__ . "/includes/drug_types.php";
@@ -22,10 +23,15 @@ foreach ($items as $it) {
     $grouped[$t][] = $it;
 }
 
-// โหลด draft ล่าสุด ของ user (ยังไม่ได้ใช้ แต่อย่าลบทิ้ง)
+// A new-form submission must never silently replace the latest draft's items.
 $stmt2 = $pdo->prepare('SELECT * FROM withdrawals WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 1');
 $stmt2->execute([$user['id'],'draft']);
 $draft = $stmt2->fetch();
+if ($draft) {
+    header('Location: view_withdrawal.php?id=' . (int)$draft['id']);
+    exit;
+}
+$msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 ?>
 <!doctype html>
 <html lang="th">

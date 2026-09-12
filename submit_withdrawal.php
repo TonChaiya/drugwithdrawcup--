@@ -7,6 +7,10 @@ if (!verify_csrf($_POST['csrf_token'] ?? '')) { die('Invalid CSRF'); }
 
 $user_id = $user['id'];
 $host_code = $user['host_code'] ?? null;
+if (!preg_match('/^[0-9]{5}$/', (string)$host_code)) {
+  $_SESSION['flash'] = 'บัญชีนี้ยังไม่ได้กำหนดรหัสสถานบริการที่ถูกต้อง';
+  header('Location: dashboard.php'); exit;
+}
 $action = $_POST['action'] ?? 'submit';
 // Preserve the long-standing draft button value while using one internal action.
 if ($action === 'save') $action = 'draft';
@@ -29,7 +33,10 @@ try {
   $draft = $stmtDraft->fetch();
 
   if ($draft) {
-    $withdrawal_id = $draft['id'];
+    // The new form has no draft ID and must not erase an existing draft.
+    $pdo->rollBack();
+    $_SESSION['flash'] = 'มีใบเบิกร่างอยู่แล้ว กรุณาแก้ไขใบเบิกร่างเดิม';
+    header('Location: view_withdrawal.php?id=' . (int)$draft['id']); exit;
   } else {
     // create new: only assign withdraw_no when action is 'submit'
     if ($action === 'submit') {

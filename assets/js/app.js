@@ -60,6 +60,22 @@
     return true;
   }
 
+  function keepFocusWithin(event, container) {
+    if (event.key !== 'Tab' || !container) return;
+    var focusable = Array.prototype.slice.call(container.querySelectorAll('a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])'))
+      .filter(function (element) { return !element.disabled && element.offsetParent !== null; });
+    if (!focusable.length) return;
+    var first = focusable[0];
+    var last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     navPanel = document.querySelector('[data-app-nav-panel]');
     navToggle = document.querySelector('[data-app-nav-toggle]');
@@ -98,6 +114,12 @@
   });
 
   document.addEventListener('keydown', function (event) {
+    var openModal = document.querySelector('.app-modal.is-open');
+    if (event.key === 'Tab') {
+      if (openModal) keepFocusWithin(event, openModal);
+      else if (navPanel && navPanel.classList.contains('is-open')) keepFocusWithin(event, navPanel);
+      return;
+    }
     if (event.key !== 'Escape') return;
     if (closeOpenModal()) return;
     if (navPanel && navPanel.classList.contains('is-open')) setNavOpen(false);
