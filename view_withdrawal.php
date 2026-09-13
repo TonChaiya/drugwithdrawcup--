@@ -195,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $maySave = ($isOwner && $lockedStatus === 'draft') || ($isAdmin && in_array($lockedStatus, ['draft','submitted'], true));
       if (!$maySave) throw new RuntimeException('สถานะใบเบิกเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่');
 
-      $itemStmt = $pdo->prepare('SELECT wi.id, wi.pack_size_snapshot, wi.unit_snapshot, d.pack_size, d.unit FROM withdrawal_items wi JOIN drug_item d ON d.id=wi.drug_item_id WHERE wi.withdrawal_id=? FOR UPDATE');
+      $itemStmt = $pdo->prepare('SELECT wi.id, wi.quantity, wi.pack_size_snapshot, wi.unit_snapshot, d.pack_size, d.unit FROM withdrawal_items wi JOIN drug_item d ON d.id=wi.drug_item_id WHERE wi.withdrawal_id=? FOR UPDATE');
       $itemStmt->execute([$id]);
       $itemMap = [];
       foreach ($itemStmt->fetchAll() as $row) $itemMap[(int)$row['id']] = $row;
@@ -213,6 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $row = $itemMap[$wiId];
         $up->execute([$qty, $note, $current, $row['pack_size_snapshot'] ?? $row['pack_size'], $row['unit_snapshot'] ?? $row['unit'], $wiId, $id]);
+        $itemMap[$wiId]['quantity'] = $qty;
       }
 
       $diStmt = $pdo->prepare('SELECT working_code, pack_size, unit FROM drug_item WHERE id=? AND is_active=1 LIMIT 1');
@@ -244,7 +245,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($delivered as $wiIdRaw => $deliveredRaw) {
           $wiId = (int)$wiIdRaw;
           $deliveredValue = withdrawal_delivered_or_zero($deliveredRaw);
-          if (!isset($itemMap[$wiId]) || $deliveredValue === null) throw new RuntimeException('จำนวนจ่ายจริงไม่ถูกต้อง');
+          if (!isset($itemMap[$wiId]) || $deliveredValue === null || $deliveredValue > (int)$itemMap[$wiId]['quantity']) {
+            throw new RuntimeException('จำนวนจ่ายจริงต้องไม่มากกว่าจำนวนที่ขอเบิก');
+          }
           $upDelivered->execute([$deliveredValue, $wiId, $id]);
         }
       }
