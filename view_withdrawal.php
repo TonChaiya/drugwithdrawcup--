@@ -194,6 +194,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $lockedStatus = (string)$lockWithdrawal->fetchColumn();
       $maySave = ($isOwner && $lockedStatus === 'draft') || ($isAdmin && in_array($lockedStatus, ['draft','submitted'], true));
       if (!$maySave) throw new RuntimeException('สถานะใบเบิกเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่');
+      if ($lockedStatus === 'submitted' && ($qtys || $currents || $newDrugIds || $newQtys || $newNotes || $newCurrents)) {
+        throw new RuntimeException('ใบเบิกรออนุมัติแก้ได้เฉพาะจำนวนจ่ายจริงและหมายเหตุ');
+      }
 
       $itemStmt = $pdo->prepare('SELECT wi.id, wi.quantity, wi.pack_size_snapshot, wi.unit_snapshot, d.pack_size, d.unit FROM withdrawal_items wi JOIN drug_item d ON d.id=wi.drug_item_id WHERE wi.withdrawal_id=? FOR UPDATE');
       $itemStmt->execute([$id]);
@@ -241,14 +244,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($isAdmin && $lockedStatus === 'submitted' && isset($_POST['delivered'])) {
         $delivered = $_POST['delivered'];
         if (!is_array($delivered) || count($delivered) > 1000) throw new RuntimeException('ข้อมูลจำนวนจ่ายจริงไม่ถูกต้อง');
-        $upDelivered = $pdo->prepare('UPDATE withdrawal_items SET delivered_quantity=? WHERE id=? AND withdrawal_id=?');
+        $upDelivered = $pdo->prepare('UPDATE withdrawal_items SET delivered_quantity=?, note=COALESCE(?,note) WHERE id=? AND withdrawal_id=?');
         foreach ($delivered as $wiIdRaw => $deliveredRaw) {
           $wiId = (int)$wiIdRaw;
           $deliveredValue = withdrawal_delivered_or_zero($deliveredRaw);
           if (!isset($itemMap[$wiId]) || $deliveredValue === null || $deliveredValue > (int)$itemMap[$wiId]['quantity']) {
             throw new RuntimeException('จำนวนจ่ายจริงต้องไม่มากกว่าจำนวนที่ขอเบิก');
           }
-          $upDelivered->execute([$deliveredValue, $wiId, $id]);
+          $note = array_key_exists($wiIdRaw, $notes) ? bounded_plain_text($notes[$wiIdRaw], 255) : null;
+          if (array_key_exists($wiIdRaw, $notes) && $note === null) throw new RuntimeException('หมายเหตุต้องไม่เกิน 255 ตัวอักษร');
+          $upDelivered->execute([$deliveredValue, $note, $wiId, $id]);
         }
       }
 
