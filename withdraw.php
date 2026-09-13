@@ -168,7 +168,7 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
                         <span class="drug-entry__pack-context">บรรจุ <?= e($rawPack !== '' ? $rawPack : 'ไม่ระบุ') ?><?= $unit !== '' ? ' ' . e($unit) : '' ?></span>
                         <span class="drug-entry__history">ย้อนหลัง 3 เดือน:
                           <?php for ($mi = 1; $mi <= 3; $mi++): ?>
-                            <?= $mi > 1 ? ' · ' : '' ?><?= e($monthLabels[$mi]) ?> <?= (int)($monthlyTotals[$mi][$drugId] ?? 0) ?>
+                            <?= $mi > 1 ? ' · ' : '' ?><span class="drug-entry__history-month drug-entry__history-month--<?= $mi ?>"><?= e($monthLabels[$mi]) ?> <?= (int)($monthlyTotals[$mi][$drugId] ?? 0) ?></span>
                           <?php endfor; ?>
                           <?= e($unit) ?>
                         </span>

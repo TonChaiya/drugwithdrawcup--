@@ -1340,6 +1340,10 @@
   overflow-wrap: anywhere;
 }
 
+.drug-entry__history-month--1 { color: #dc2626; }
+.drug-entry__history-month--2 { color: #d97706; }
+.drug-entry__history-month--3 { color: #059669; }
+
 .drug-entry__unit {
   color: #475569;
   font-size: 12px;
