@@ -539,7 +539,7 @@ foreach($showItems as $it):
     </td>
 
             <td class="approval-row__stock" data-label="คงเหลือ">
-                <?php if($w['status']==='draft' && $_SESSION['user']['id']==$w['user_id']): ?>
+                <?php if($w['status']==='draft' && ($isOwner || $isAdmin)): ?>
                     <input type="number"
                            name="current_stock[<?php echo $it['wi_id']; ?>]"
                            value="<?php echo $initial_current_stock; ?>"
@@ -553,7 +553,7 @@ foreach($showItems as $it):
             </td>
 
             <td class="approval-row__requested" data-label="ขอเบิก">
-                <?php if($w['status']==='draft' && $_SESSION['user']['id']==$w['user_id']): ?>
+                <?php if($w['status']==='draft' && ($isOwner || $isAdmin)): ?>
                     <input type="number"
                            name="qty[<?php echo $it['wi_id']; ?>]"
                            value="<?php echo $initialQty; ?>"
@@ -601,7 +601,7 @@ foreach($showItems as $it):
                 <div class="approval-row__note-content">
 
                     <div class="approval-row__note-field">
-                    <?php if($w['status']==='draft' || ($isAdmin && $w['status']==='submitted')): ?>
+                    <?php if(($w['status']==='draft' && ($isOwner || $isAdmin)) || ($isAdmin && $w['status']==='submitted')): ?>
                         <input type="hidden"
                                name="note[<?php echo $it['wi_id']; ?>]"
                                value="<?php echo e($it['note']); ?>"
@@ -1025,7 +1025,10 @@ foreach($showItems as $it):
       </section>
     <?php elseif ($w['status'] === 'draft' && ($isOwner || $isAdmin)): ?>
       <section class="approval-summary" aria-label="การดำเนินการใบเบิก">
-        <div><h2><?php echo $w['status'] === 'draft' ? 'ตรวจสอบรายการก่อนส่ง' : 'บันทึกการแก้ไข'; ?></h2></div>
+        <div>
+          <h2>ตรวจสอบรายการก่อนส่ง</h2>
+          <p>แก้จำนวนขอเบิกและบันทึกได้ในฉบับร่าง ส่วนจำนวนจ่ายจริงจะกรอกได้หลังส่งเพื่อขออนุมัติ</p>
+        </div>
         <div class="approval-summary__actions">
           <?php if (($w['status'] === 'draft' && $isOwner) || $isAdmin): ?>
             <button id="save-btn" type="button" class="approval-button approval-button--secondary">บันทึกการแก้ไข</button>
