@@ -40,61 +40,68 @@ $fiscalYears = array_keys($fiscalYears);
 rsort($fiscalYears, SORT_NUMERIC);
 ?>
 <!doctype html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="https://cdn.tailwindcss.com"></script><title>จัดการรายการยา</title><style>.modal-backdrop{background:rgba(15,23,42,.6);backdrop-filter:blur(3px)}.modal-card{max-height:calc(100vh - 2rem);overflow-y:auto}body.modal-open{overflow:hidden}</style></head>
-<body class="bg-slate-50">
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>จัดการรายการยา</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="assets/css/app.css">
+  <?php define('DRUG_WITHDRAW_APP_STYLES', true); ?>
+</head>
+<body class="app-page drugs-admin-page">
   <?php include __DIR__ . '/includes/nav.php'; ?>
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-5">
+  <main class="app-ui drugs-admin-main">
+    <header class="drugs-admin-header">
       <div>
         <h1 class="text-2xl font-bold text-slate-900">จัดการรายการยา</h1>
         <p class="text-sm text-slate-500 mt-1">ค้นหา ตรวจสอบ และจัดการข้อมูลยา พร้อมประวัติผู้ดำเนินการ</p>
       </div>
-      <div class="flex flex-wrap gap-2">
-        <a href="download_drug_template.php" class="px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-medium">ดาวน์โหลดต้นแบบ Excel</a>
-        <button type="button" onclick="openModal('importModal')" class="px-4 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 font-medium">นำเข้า Excel/CSV</button>
-        <button type="button" onclick="openAddModal()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm">+ เพิ่มรายการยา</button>
+      <div class="drugs-admin-header__actions">
+        <a href="download_drug_template.php" class="drugs-admin-button">ดาวน์โหลดต้นแบบ Excel</a>
+        <button type="button" onclick="openModal('importModal')" class="drugs-admin-button">นำเข้า Excel/CSV</button>
+        <button type="button" onclick="openAddModal()" class="drugs-admin-button drugs-admin-button--primary">+ เพิ่มรายการยา</button>
       </div>
-    </div>
-    <?php if($msg): ?><div class="mb-5 p-3 rounded-xl border <?php echo $msgError ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'; ?>"><?php echo e($msg); ?></div><?php endif; ?>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-      <div class="bg-white rounded-2xl border border-slate-200 p-4"><div class="text-sm text-slate-500">รายการทั้งหมด</div><div class="text-2xl font-bold mt-1"><?php echo count($items); ?></div></div>
-      <div class="bg-white rounded-2xl border border-green-200 p-4"><div class="text-sm text-green-700">เปิดใช้งาน</div><div class="text-2xl font-bold text-green-800 mt-1"><?php echo $activeCount; ?></div></div>
-      <div class="bg-white rounded-2xl border border-amber-200 p-4"><div class="text-sm text-amber-700">ระงับใช้งาน</div><div class="text-2xl font-bold text-amber-800 mt-1"><?php echo $suspendedCount; ?></div></div>
-    </div>
-    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4">
+    </header>
+    <?php if($msg): ?><div class="drugs-admin-notice <?php echo $msgError ? 'drugs-admin-notice--error' : 'drugs-admin-notice--success'; ?>"><?php echo e($msg); ?></div><?php endif; ?>
+    <section class="drugs-admin-summary" aria-label="สรุปรายการยา">
+      <div><span>รายการทั้งหมด</span><strong><?php echo count($items); ?></strong></div>
+      <div><span>เปิดใช้งาน</span><strong><?php echo $activeCount; ?></strong></div>
+      <div><span>ระงับใช้งาน</span><strong><?php echo $suspendedCount; ?></strong></div>
+    </section>
+    <section class="drugs-admin-section">
+      <div class="drugs-admin-section__head">
         <div><h2 class="font-semibold text-lg">รายการยา</h2><p id="result-count" class="text-sm text-slate-500 mt-1"></p></div>
-        <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-          <select id="year-filter" onchange="applyDrugFilters(true)" class="h-11 border border-slate-300 rounded-xl px-3 bg-white"><option value="all">ทุกปีงบประมาณ</option><?php foreach ($fiscalYears as $year): ?><option value="<?php echo (int)$year; ?>">ปี <?php echo (int)$year; ?></option><?php endforeach; ?></select>
-          <select id="status-filter" onchange="applyDrugFilters(true)" class="h-11 border border-slate-300 rounded-xl px-3 bg-white"><option value="all">ทุกสถานะ</option><option value="active">เปิดใช้งาน</option><option value="suspended">ยังไม่เปิดใช้/ระงับ</option></select>
-          <div id="drug-search-wrap" class="relative w-full sm:w-[420px]">
-            <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">⌕</span><input id="drug-search" type="search" autocomplete="off" placeholder="พิมพ์รหัสยา หรือชื่อยา..." class="h-11 border border-slate-300 rounded-xl pl-9 pr-10 w-full focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="handleDrugSearch()" onkeydown="handleSearchKey(event)" onfocus="showDrugSuggestions()"><button id="clear-search" type="button" onclick="clearDrugSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700" aria-label="ล้างการค้นหา">&times;</button></div>
-            <div id="drug-suggestions" class="hidden absolute z-40 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-80 overflow-y-auto" role="listbox"></div>
+        <div class="drugs-admin-filters">
+          <select id="year-filter" onchange="applyDrugFilters(true)" aria-label="กรองปีงบประมาณ"><option value="all">ทุกปีงบประมาณ</option><?php foreach ($fiscalYears as $year): ?><option value="<?php echo (int)$year; ?>">ปี <?php echo (int)$year; ?></option><?php endforeach; ?></select>
+          <select id="status-filter" onchange="applyDrugFilters(true)" aria-label="กรองสถานะ"><option value="all">ทุกสถานะ</option><option value="active">เปิดใช้งาน</option><option value="suspended">ยังไม่เปิดใช้/ระงับ</option></select>
+          <div id="drug-search-wrap" class="drugs-admin-search-wrap">
+            <div class="drugs-admin-search-control"><span aria-hidden="true">⌕</span><input id="drug-search" type="search" autocomplete="off" placeholder="พิมพ์รหัสยา หรือชื่อยา..." oninput="handleDrugSearch()" onkeydown="handleSearchKey(event)" onfocus="showDrugSuggestions()"><button id="clear-search" type="button" onclick="clearDrugSearch()" class="hidden" aria-label="ล้างการค้นหา">&times;</button></div>
+            <div id="drug-suggestions" class="hidden drugs-admin-suggestions" role="listbox"></div>
           </div>
         </div>
       </div>
-      <div id="bulk-toolbar" class="hidden mb-4 rounded-xl border border-blue-200 bg-blue-50 p-3 flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div class="text-sm text-blue-900"><strong id="selected-count">เลือก 0 รายการ</strong><span class="mx-2">·</span><button type="button" onclick="selectAllFiltered()" class="underline font-medium">เลือกทั้งหมดตามผลค้นหา</button><span class="mx-2">·</span><button type="button" onclick="clearDrugSelection()" class="underline">ล้างการเลือก</button></div>
-        <div class="flex gap-2"><button type="button" onclick="openBulkStatusModal(1)" class="px-3 py-2 rounded-lg bg-emerald-600 text-white font-semibold">เปิดใช้ที่เลือก</button><button type="button" onclick="openBulkStatusModal(0)" class="px-3 py-2 rounded-lg bg-amber-600 text-white font-semibold">ระงับที่เลือก</button></div>
+      <label class="drugs-admin-select-page"><input id="select-page" type="checkbox" onchange="toggleCurrentPage(this.checked)"><span>เลือกทั้งหน้าปัจจุบัน</span></label>
+      <div id="bulk-toolbar" class="hidden drugs-admin-bulk-toolbar">
+        <div class="drugs-admin-bulk-toolbar__selection"><strong id="selected-count">เลือก 0 รายการ</strong><span>·</span><button type="button" onclick="selectAllFiltered()">เลือกทั้งหมดตามผลค้นหา</button><span>·</span><button type="button" onclick="clearDrugSelection()">ล้างการเลือก</button></div>
+        <div class="drugs-admin-bulk-toolbar__actions"><button type="button" onclick="openBulkStatusModal(1)" class="drugs-admin-button drugs-admin-button--activate">เปิดใช้ที่เลือก</button><button type="button" onclick="openBulkStatusModal(0)" class="drugs-admin-button drugs-admin-button--suspend">ระงับที่เลือก</button></div>
       </div>
-      <div class="overflow-x-auto">
-      <table class="w-full table-auto min-w-[1050px]">
-        <thead class="bg-slate-100"><tr><th class="p-3 text-center"><input id="select-page" type="checkbox" onchange="toggleCurrentPage(this.checked)" aria-label="เลือกทุกแถวในหน้านี้"></th><th class="p-3 text-left">ID</th><th class="p-3 text-left">รหัส</th><th class="p-3 text-left">ชื่อยา</th><th class="p-3 text-left">ปีงบ</th><th class="p-3 text-left">ขนาด</th><th class="p-3 text-left">หน่วย</th><th class="p-3 text-left">ประเภท</th><th class="p-3 text-left">สถานะ</th><th class="p-3 text-left">จัดการ</th></tr></thead>
+      <div class="drugs-admin-table-wrap">
+      <table class="drugs-admin-table">
+        <thead><tr><th>เลือก</th><th>ID</th><th>รหัส</th><th>ชื่อยา</th><th>ปีงบ</th><th>ขนาด</th><th>หน่วย</th><th>ประเภท</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
         <tbody>
         <?php foreach($items as $it): ?>
-          <tr class="border-t drug-row hover:bg-slate-50 <?php echo (int)$it['is_active'] ? '' : 'bg-amber-50'; ?>" data-id="<?php echo (int)$it['id']; ?>" data-year="<?php echo (int)$it['fiscal_year']; ?>" data-status="<?php echo (int)$it['is_active'] ? 'active' : 'suspended'; ?>" data-code="<?php echo e($it['working_code']); ?>" data-name="<?php echo e($it['name']); ?>" data-type="<?php echo e($it['type']); ?>" data-search="<?php echo e(strtolower($it['working_code'].' '.$it['name'].' '.$it['type'])); ?>">
-            <td class="p-3 text-center"><input type="checkbox" class="drug-select" value="<?php echo (int)$it['id']; ?>" onchange="toggleDrugSelection(this)"></td>
-            <td class="p-3 text-slate-500"><?php echo $it['id']; ?></td>
-            <td class="p-3 font-mono font-medium"><?php echo e($it['working_code']); ?></td>
-            <td class="p-3 font-medium"><?php echo e($it['name']); ?></td>
-            <td class="p-3"><?php echo (int)$it['fiscal_year']; ?></td>
-            <td class="p-3"><?php echo e($it['pack_size']); ?></td>
-            <td class="p-3"><?php echo e($it['unit'] ?? ''); ?></td>
-            <td class="p-3"><?php echo e($it['type']); ?></td>
-            <td class="p-3"><span class="inline-flex px-2.5 py-1 rounded-full text-xs <?php echo (int)$it['is_active'] ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'; ?>"><?php echo (int)$it['is_active'] ? 'เปิดใช้งาน' : 'ยังไม่เปิดใช้/ระงับ'; ?></span></td>
-            <td class="p-3 whitespace-nowrap">
-              <div class="flex items-center gap-2">
+          <tr class="drug-row <?php echo (int)$it['is_active'] ? '' : 'drug-row--suspended'; ?>" data-id="<?php echo (int)$it['id']; ?>" data-year="<?php echo (int)$it['fiscal_year']; ?>" data-status="<?php echo (int)$it['is_active'] ? 'active' : 'suspended'; ?>" data-code="<?php echo e($it['working_code']); ?>" data-name="<?php echo e($it['name']); ?>" data-type="<?php echo e($it['type']); ?>" data-search="<?php echo e(strtolower($it['working_code'].' '.$it['name'].' '.$it['type'])); ?>">
+            <td class="drug-cell--select"><input type="checkbox" class="drug-select" value="<?php echo (int)$it['id']; ?>" onchange="toggleDrugSelection(this)" aria-label="เลือกรายการยา <?php echo e($it['working_code']); ?>"></td>
+            <td class="drug-cell--id" data-label="ID"><?php echo $it['id']; ?></td>
+            <td class="drug-cell--code"><?php echo e($it['working_code']); ?></td>
+            <td class="drug-cell--name"><?php echo e($it['name']); ?></td>
+            <td class="drug-cell--year" data-label="ปีงบ"><?php echo (int)$it['fiscal_year']; ?></td>
+            <td class="drug-cell--pack" data-label="ขนาด"><?php echo e($it['pack_size']); ?></td>
+            <td class="drug-cell--unit" data-label="หน่วย"><?php echo e($it['unit'] ?? ''); ?></td>
+            <td class="drug-cell--type" data-label="ประเภท"><?php echo e($it['type']); ?></td>
+            <td class="drug-cell--status"><span class="drugs-admin-status <?php echo (int)$it['is_active'] ? 'drugs-admin-status--active' : 'drugs-admin-status--suspended'; ?>"><?php echo (int)$it['is_active'] ? 'เปิดใช้งาน' : 'ยังไม่เปิดใช้/ระงับ'; ?></span></td>
+            <td class="drug-cell--actions">
+              <div class="drugs-admin-row-actions">
               <button type="button" class="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium" onclick="openEditModal(this)" data-id="<?php echo (int)$it['id']; ?>" data-code="<?php echo e($it['working_code']); ?>" data-name="<?php echo e($it['name']); ?>" data-year="<?php echo (int)$it['fiscal_year']; ?>" data-pack="<?php echo e($it['pack_size']); ?>" data-unit="<?php echo e($it['unit'] ?? ''); ?>" data-type="<?php echo e($it['type']); ?>">แก้ไข</button>
               <button type="button"
                 onclick="openSingleStatusModal(this)"
@@ -112,19 +119,19 @@ rsort($fiscalYears, SORT_NUMERIC);
             </td>
           </tr>
         <?php endforeach; ?>
-          <tr id="no-drug-results" class="hidden"><td colspan="10" class="p-10 text-center text-slate-500">ไม่พบรายการยาที่ตรงกับคำค้นหา</td></tr>
+          <tr id="no-drug-results" class="hidden"><td colspan="10">ไม่พบรายการยาที่ตรงกับคำค้นหา</td></tr>
         </tbody>
       </table>
       </div>
-      <div id="pagination-controls" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
+      <div id="pagination-controls" class="drugs-admin-pagination">
         <span class="text-sm text-slate-600">แสดงหน้าละ 30 รายการ</span>
-        <div class="flex items-center gap-2"><button id="prev-page" type="button" onclick="changeDrugPage(-1)" class="px-3 py-2 rounded-lg border bg-white disabled:opacity-40">ก่อนหน้า</button><span id="page-label" class="text-sm text-slate-600 min-w-24 text-center"></span><button id="next-page" type="button" onclick="changeDrugPage(1)" class="px-3 py-2 rounded-lg border bg-white disabled:opacity-40">ถัดไป</button></div>
+        <div><button id="prev-page" type="button" onclick="changeDrugPage(-1)" class="drugs-admin-button">ก่อนหน้า</button><span id="page-label"></span><button id="next-page" type="button" onclick="changeDrugPage(1)" class="drugs-admin-button">ถัดไป</button></div>
       </div>
-    </div>
-    <details class="bg-white rounded-2xl border border-slate-200 shadow-sm mt-4 group">
-      <summary class="list-none cursor-pointer p-4 flex items-center justify-between"><div><h2 class="font-medium">ประวัติการเปลี่ยนแปลงล่าสุด</h2><p class="text-xs text-gray-500 mt-1">กดเพื่อดูผู้ดำเนินการ ช่องทาง IP และวันเวลา</p></div><span class="text-slate-400 group-open:rotate-180 transition-transform">⌄</span></summary>
-      <div class="overflow-x-auto border-t border-slate-100 p-4 pt-2">
-      <table class="w-full min-w-[760px] text-sm">
+    </section>
+    <details class="drugs-admin-audit">
+      <summary><div><h2>ประวัติการเปลี่ยนแปลงล่าสุด</h2><p>กดเพื่อดูผู้ดำเนินการ ช่องทาง IP และวันเวลา</p></div><span aria-hidden="true">⌄</span></summary>
+      <div class="drugs-admin-audit__wrap">
+      <table class="drugs-admin-audit__table">
         <thead class="bg-slate-100"><tr><th class="p-2 text-left">วันเวลา</th><th class="p-2 text-left">การทำรายการ</th><th class="p-2 text-left">รายการยา</th><th class="p-2 text-left">ผู้ดำเนินการ</th><th class="p-2 text-left">ช่องทาง</th><th class="p-2 text-left">IP</th><th class="p-2 text-left">รายละเอียด</th></tr></thead>
         <tbody>
         <?php foreach ($auditLogs as $log): ?>
@@ -134,10 +141,10 @@ rsort($fiscalYears, SORT_NUMERIC);
       </table>
       </div>
     </details>
-  </div>
+  </main>
 
-  <div id="drugModal" class="fixed inset-0 z-[100] hidden modal-backdrop p-4 items-center justify-center" onclick="backdropClose(event,'drugModal')">
-    <div class="modal-card w-full max-w-2xl bg-white rounded-2xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="drugModalTitle">
+  <div id="drugModal" class="drug-admin-modal hidden modal-backdrop" onclick="backdropClose(event,'drugModal')">
+    <div class="drug-admin-dialog modal-card" role="dialog" aria-modal="true" aria-labelledby="drugModalTitle">
       <div class="flex items-center justify-between px-5 py-4 border-b"><div><h2 id="drugModalTitle" class="text-xl font-bold">เพิ่มรายการยา</h2><p class="text-sm text-slate-500">กรอกข้อมูลให้ครบทุกช่อง</p></div><button type="button" onclick="closeModal('drugModal')" class="text-3xl leading-none text-slate-400 hover:text-slate-700">&times;</button></div>
       <form method="post" id="drugForm" class="p-5 space-y-4" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>"><input type="hidden" name="action" id="drugAction" value="add"><input type="hidden" name="id" id="drugId">
@@ -155,8 +162,8 @@ rsort($fiscalYears, SORT_NUMERIC);
     </div>
   </div>
 
-  <div id="importModal" class="fixed inset-0 z-[100] hidden modal-backdrop p-4 items-center justify-center" onclick="backdropClose(event,'importModal')">
-    <div class="modal-card w-full max-w-xl bg-white rounded-2xl shadow-2xl" role="dialog" aria-modal="true">
+  <div id="importModal" class="drug-admin-modal hidden modal-backdrop" onclick="backdropClose(event,'importModal')">
+    <div class="drug-admin-dialog modal-card" role="dialog" aria-modal="true">
       <div class="flex items-center justify-between px-5 py-4 border-b"><h2 class="text-xl font-bold">นำเข้ารายการยา</h2><button type="button" onclick="closeModal('importModal')" class="text-3xl leading-none text-slate-400">&times;</button></div>
       <form method="post" enctype="multipart/form-data" class="p-5 space-y-4">
         <input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>"><input type="hidden" name="action" value="import_preview">
@@ -171,8 +178,8 @@ rsort($fiscalYears, SORT_NUMERIC);
   </div>
 
   <?php if (is_array($importPreview)): ?>
-  <div id="importPreviewModal" class="fixed inset-0 z-[105] hidden modal-backdrop p-4 items-center justify-center" onclick="backdropClose(event,'importPreviewModal')">
-    <div class="modal-card w-full max-w-2xl bg-white rounded-2xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="importPreviewTitle">
+  <div id="importPreviewModal" class="drug-admin-modal hidden modal-backdrop" onclick="backdropClose(event,'importPreviewModal')">
+    <div class="drug-admin-dialog modal-card" role="dialog" aria-modal="true" aria-labelledby="importPreviewTitle">
       <div class="flex items-center justify-between px-5 py-4 border-b"><div><h2 id="importPreviewTitle" class="text-xl font-bold">ตรวจสอบก่อนนำเข้า</h2><p class="text-sm text-slate-500 mt-1"><?php echo e($importPreview['original_name'] ?? ''); ?></p></div><button type="button" onclick="closeModal('importPreviewModal')" class="text-3xl leading-none text-slate-400">&times;</button></div>
       <div class="p-5 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -191,15 +198,15 @@ rsort($fiscalYears, SORT_NUMERIC);
   </div>
   <?php endif; ?>
 
-  <div id="bulkStatusModal" class="fixed inset-0 z-[108] hidden modal-backdrop p-4 items-center justify-center" onclick="backdropClose(event,'bulkStatusModal')">
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="bulkStatusTitle">
+  <div id="bulkStatusModal" class="drug-admin-modal hidden modal-backdrop" onclick="backdropClose(event,'bulkStatusModal')">
+    <div class="drug-admin-dialog drug-admin-dialog--compact" role="dialog" aria-modal="true" aria-labelledby="bulkStatusTitle">
       <div class="p-5"><div class="w-12 h-12 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-2xl mb-4">!</div><h2 id="bulkStatusTitle" class="text-xl font-bold">ยืนยันเปลี่ยนสถานะ</h2><p id="bulkStatusText" class="text-slate-600 mt-2"></p><div class="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">การระงับไม่ลบประวัติใบเบิกเดิม รายการที่ระงับจะไม่แสดงสำหรับสร้างใบเบิกใหม่</div></div>
       <form method="post" class="px-5 pb-5 flex justify-end gap-2" onsubmit="return prepareBulkSubmit()"><input type="hidden" name="csrf_token" value="<?php echo e(csrf_token()); ?>"><input type="hidden" name="action" value="bulk_status"><input type="hidden" name="selected_ids" id="bulkDrugIds"><input type="hidden" name="is_active" id="bulkIsActive"><button type="button" onclick="closeModal('bulkStatusModal')" class="px-4 py-2.5 rounded-xl border border-slate-300">ยกเลิก</button><button id="bulkConfirmButton" class="px-5 py-2.5 rounded-xl text-white font-semibold">ยืนยัน</button></form>
     </div>
   </div>
 
-  <div id="singleStatusModal" class="fixed inset-0 z-[109] hidden modal-backdrop p-4 items-center justify-center" onclick="backdropClose(event,'singleStatusModal')">
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="singleStatusTitle">
+  <div id="singleStatusModal" class="drug-admin-modal hidden modal-backdrop" onclick="backdropClose(event,'singleStatusModal')">
+    <div class="drug-admin-dialog drug-admin-dialog--compact" role="dialog" aria-modal="true" aria-labelledby="singleStatusTitle">
       <div class="p-5">
         <div id="singleStatusIcon" class="w-12 h-12 rounded-full flex items-center justify-center text-2xl mb-4">!</div>
         <h2 id="singleStatusTitle" class="text-xl font-bold text-slate-900">ยืนยันเปลี่ยนสถานะ</h2>
@@ -218,8 +225,8 @@ rsort($fiscalYears, SORT_NUMERIC);
     </div>
   </div>
 
-  <div id="deleteModal" class="fixed inset-0 z-[110] hidden modal-backdrop p-4 items-center justify-center" onclick="backdropClose(event,'deleteModal')">
-    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+  <div id="deleteModal" class="drug-admin-modal hidden modal-backdrop" onclick="backdropClose(event,'deleteModal')">
+    <div class="drug-admin-dialog drug-admin-dialog--compact" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
       <div class="p-5">
         <div class="w-12 h-12 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-2xl mb-4">!</div>
         <h2 id="deleteModalTitle" class="text-xl font-bold text-slate-900">ยืนยันการลบถาวร</h2>
