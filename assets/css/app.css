@@ -1344,6 +1344,119 @@
 .drug-entry__history-month--2 { color: #d97706; }
 .drug-entry__history-month--3 { color: #059669; }
 
+/* Submitted withdrawal queue: one continuous read-only workspace. */
+.admin-work-queue { background: #fff; }
+.admin-work-queue .app-footer { border-top-color: #a9bfce; background: #f5f9fd; }
+.admin-work-queue__main {
+  width: min(1220px, 100%);
+  min-width: 0;
+  margin: 18px auto 56px;
+  padding: 0 20px 24px;
+  color: var(--app-text);
+  font-family: var(--app-font);
+}
+.admin-work-queue__heading { padding: 24px 0 20px; border-bottom: 2px solid #a9bfce; }
+.admin-work-queue__heading h1 { margin: 0; font-size: clamp(22px, 2.3vw, 29px); line-height: 1.3; font-weight: 800; }
+.admin-work-queue__heading p { margin: 7px 0 0; color: #52667a; font-size: 13px; line-height: 1.6; }
+.admin-work-queue__filters {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) repeat(2, minmax(140px, 1fr)) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 20px 0 22px;
+  border-bottom: 1px solid #a9bfce;
+}
+.admin-work-queue__filter { min-width: 0; }
+.admin-work-queue__filter label { display: block; margin-bottom: 6px; color: #334155; font-size: 12px; font-weight: 700; }
+.admin-work-queue__filter input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #b9cad7;
+  border-radius: 7px;
+  color: var(--app-text);
+  background: #fff;
+  font-size: 13px;
+}
+.admin-work-queue__filter-actions { display: flex; align-items: center; gap: 12px; min-height: 42px; }
+.admin-work-queue__search-button {
+  min-height: 42px;
+  padding: 8px 18px;
+  border: 1px solid var(--app-primary);
+  border-radius: 7px;
+  color: #fff;
+  background: var(--app-primary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin-work-queue__search-button:hover { background: var(--app-primary-hover); }
+.admin-work-queue__filter input:focus-visible,
+.admin-work-queue__search-button:focus-visible,
+.admin-work-queue .admin-work-queue__clear:focus-visible,
+.admin-work-queue .admin-work-queue__empty a:focus-visible { outline: 2px solid var(--app-action); outline-offset: 3px; }
+.admin-work-queue .admin-work-queue__clear, .admin-work-queue .admin-work-queue__empty a { color: #1d4ed8; font-size: 13px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+.admin-work-queue__list { min-width: 0; }
+.admin-work-queue__table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+.admin-work-queue__table th {
+  padding: 13px 10px;
+  border-bottom: 1px solid #a9bfce;
+  color: #29445c;
+  background: #edf5fa;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 750;
+}
+.admin-work-queue__table th:nth-child(1) { width: 12%; }
+.admin-work-queue__table th:nth-child(2) { width: 24%; }
+.admin-work-queue__table th:nth-child(3) { width: 20%; }
+.admin-work-queue__table th:nth-child(4) { width: 19%; }
+.admin-work-queue__table th:nth-child(5) { width: 10%; }
+.admin-work-queue__table th:nth-child(6) { width: 15%; }
+.admin-work-queue__table td { padding: 13px 10px; border-bottom: 1px solid #c8d6e0; vertical-align: middle; overflow-wrap: anywhere; }
+.admin-work-queue__table tbody tr:hover { background: #f8fbfd; }
+.admin-work-queue__code { color: #154360; font-weight: 800; white-space: nowrap; }
+.admin-work-queue__facility { color: #172f45; font-weight: 750; }
+.admin-work-queue__user { color: #334155; }
+.admin-work-queue__user small { display: block; margin-top: 3px; color: #64748b; font-size: 11px; }
+.admin-work-queue__date, .admin-work-queue__count { color: #52667a; }
+.admin-work-queue .admin-work-queue__action a { display: inline-flex; align-items: center; gap: 5px; min-height: 42px; color: #1d4ed8; font-weight: 750; white-space: nowrap; }
+.admin-work-queue .admin-work-queue__action a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.admin-work-queue .admin-work-queue__action a:focus-visible { outline: 2px solid var(--app-action); outline-offset: 3px; }
+.admin-work-queue__empty { margin: 0; padding: 25px 0; border-bottom: 1px solid #c8d6e0; color: #52667a; font-size: 14px; }
+
+@media (max-width: 900px) {
+  .admin-work-queue__filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-work-queue__filter--query, .admin-work-queue__filter-actions { grid-column: 1 / -1; }
+  .admin-work-queue__table { font-size: 12px; }
+  .admin-work-queue__table th, .admin-work-queue__table td { padding-left: 7px; padding-right: 7px; }
+}
+
+@media (max-width: 680px) {
+  .admin-work-queue__main { margin: 0 auto 40px; padding: 0 12px 28px; }
+  .admin-work-queue__heading { padding: 22px 0 18px; }
+  .admin-work-queue__table, .admin-work-queue__table tbody { display: block; }
+  .admin-work-queue__table thead { display: none; }
+  .admin-work-queue__table tr { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 9px; padding: 16px 0; border-bottom: 1px solid #a9bfce; }
+  .admin-work-queue__table td { display: block; min-width: 0; padding: 0; border: 0; }
+  .admin-work-queue__code { grid-column: 1; }
+  .admin-work-queue__facility { grid-column: 2; }
+  .admin-work-queue__user { grid-column: 1 / -1; }
+  .admin-work-queue__user::before { content: 'ผู้เบิก '; color: #64748b; font-weight: 500; }
+  .admin-work-queue__user small { display: inline; margin: 0 0 0 6px; }
+  .admin-work-queue__date { grid-column: 1; }
+  .admin-work-queue__count { grid-column: 2; }
+  .admin-work-queue__action { grid-column: 1 / -1; margin-top: 3px; }
+  .admin-work-queue .admin-work-queue__action a { min-height: 44px; padding-right: 12px; }
+}
+
+@media (max-width: 540px) {
+  .admin-work-queue__filters { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .admin-work-queue__filter--query, .admin-work-queue__filter-actions { grid-column: 1; }
+}
+
 .drug-entry__unit {
   color: #475569;
   font-size: 12px;

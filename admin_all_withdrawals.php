@@ -45,36 +45,67 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
 $scopeSummary = user_scope_summary($pdo, $manager);
+$hasActiveFilters = $q !== '' || $from !== '' || $to !== '' || $user_filter !== '' || $withdraw_no !== '';
 ?>
 <!doctype html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="https://cdn.tailwindcss.com"></script><title>All Submitted Withdrawals</title></head>
-<body class="bg-slate-50">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="https://cdn.tailwindcss.com"></script><title>ใบเบิกรออนุมัติ</title></head>
+<body class="app-page admin-work-queue">
   <?php include __DIR__ . '/includes/nav.php'; ?>
-  <div class="max-w-6xl mx-auto">
-    <div class="mb-4"><h1 class="text-xl font-semibold">ใบเบิกรออนุมัติในขอบเขตของคุณ</h1><p class="text-sm text-slate-500 mt-1"><?= e($scopeSummary['label']) ?> · <?= (int)$scopeSummary['facility_count'] ?> สถานบริการ</p></div>
-    <div class="bg-slate-100 p-4 rounded shadow">
-      <form method="get" class="mb-4 flex gap-2 items-center">
-        <input type="search" name="q" value="<?php echo e($q ?? ''); ?>" placeholder="ค้นหาเลขที่ หรือ ชื่อ รพ.สต." class="border rounded px-3 py-1 text-sm w-64">
-        <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">ค้นหา</button>
-        <a href="admin_all_withdrawals.php" class="ml-2 text-sm text-gray-500">ล้าง</a>
-      </form>
-      <div class="space-y-3">
-        <?php foreach($rows as $r): ?>
-          <div onclick="window.location='view_withdrawal.php?id=<?php echo $r['id']; ?>'" class="p-3 bg-white rounded-md shadow-sm hover:shadow-md flex items-center justify-between border-l-4 border-sky-400 cursor-pointer">
-            <div>
-              <div class="font-medium"><?php echo e(format_withdraw_code($r['withdraw_no'])); ?> — <?php echo e($r['facility_name'] ?? ($r['username'] . ' / ' . $r['name'])); ?></div>
-              <div class="mt-1 text-xs text-slate-500">สร้างโดย: <?php echo e($r['name']); ?> · Username: <?php echo e($r['username']); ?> · สถานบริการ: <?php echo e($r['facility_name']); ?> · <?php echo e(format_thai_datetime($r['created_at'])); ?></div>
-              <div class="text-xs text-gray-500"><?php echo $r['item_count']; ?> รายการ • <?php echo e($r['created_at']); ?></div>
-            </div>
-            <div class="text-sm">
-              <a href="view_withdrawal.php?id=<?php echo $r['id']; ?>" class="text-blue-600">ดู</a>
-            </div>
-          </div>
-        <?php endforeach; ?>
+  <main class="admin-work-queue__main app-ui">
+    <header class="admin-work-queue__heading">
+      <h1>ใบเบิกรออนุมัติ</h1>
+      <p>ขอบเขต: <?= e($scopeSummary['label']) ?> · <?= (int)$scopeSummary['facility_count'] ?> สถานบริการ · <?= count($rows) === 200 ? 'แสดง 200 รายการแรก' : 'แสดง ' . count($rows) . ' ใบรออนุมัติ' ?></p>
+    </header>
+
+    <form method="get" action="admin_all_withdrawals.php" class="admin-work-queue__filters" aria-label="ค้นหาใบเบิกรออนุมัติ">
+      <div class="admin-work-queue__filter admin-work-queue__filter--query">
+        <label for="queue-query">เลขใบเบิก / สถานบริการ / ผู้เบิก</label>
+        <input id="queue-query" type="search" name="q" value="<?= e($q) ?>" placeholder="ค้นหาเลขใบเบิก รพ.สต. หรือผู้เบิก" autocomplete="off">
       </div>
-    </div>
-  </div>
+      <div class="admin-work-queue__filter">
+        <label for="queue-from">จากวันที่</label>
+        <input id="queue-from" type="date" name="from" value="<?= e($from) ?>">
+      </div>
+      <div class="admin-work-queue__filter">
+        <label for="queue-to">ถึงวันที่</label>
+        <input id="queue-to" type="date" name="to" value="<?= e($to) ?>">
+      </div>
+      <div class="admin-work-queue__filter-actions">
+        <button type="submit" class="admin-work-queue__search-button">ค้นหา</button>
+        <?php if ($hasActiveFilters): ?><a href="admin_all_withdrawals.php" class="admin-work-queue__clear">ล้างตัวกรอง</a><?php endif; ?>
+      </div>
+    </form>
+
+    <section class="admin-work-queue__list" aria-label="คิวใบเบิกรออนุมัติ">
+      <?php if (!$rows): ?>
+        <p class="admin-work-queue__empty">ไม่พบใบเบิกรออนุมัติในเงื่อนไขที่เลือก<?php if ($hasActiveFilters): ?> · <a href="admin_all_withdrawals.php">ล้างตัวกรอง</a><?php endif; ?></p>
+      <?php else: ?>
+        <table class="admin-work-queue__table">
+          <thead><tr>
+            <th scope="col">เลขใบเบิก</th>
+            <th scope="col">สถานบริการ</th>
+            <th scope="col">ผู้เบิก</th>
+            <th scope="col">วันที่สร้าง</th>
+            <th scope="col">จำนวนรายการ</th>
+            <th scope="col">ดำเนินการ</th>
+          </tr></thead>
+          <tbody>
+            <?php foreach ($rows as $r): ?>
+              <tr>
+                <td class="admin-work-queue__code"><?= e(format_withdraw_code($r['withdraw_no'])) ?></td>
+                <td class="admin-work-queue__facility"><?= e($r['facility_name'] ?? ($r['username'] . ' / ' . $r['name'])) ?></td>
+                <td class="admin-work-queue__user"><?= e($r['name']) ?><small><?= e($r['username']) ?></small></td>
+                <td class="admin-work-queue__date"><?= e(format_thai_datetime($r['created_at'])) ?></td>
+                <td class="admin-work-queue__count"><?= (int)$r['item_count'] ?> รายการ</td>
+                <td class="admin-work-queue__action"><a href="view_withdrawal.php?id=<?= (int)$r['id'] ?>">ตรวจใบเบิก <span aria-hidden="true">→</span></a></td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
+    </section>
+  </main>
   <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>
