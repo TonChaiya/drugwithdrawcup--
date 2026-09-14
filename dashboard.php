@@ -42,7 +42,8 @@ foreach ($statuses as $status) {
   $counts[$status] = (int)$stmtC->fetchColumn();
 
   $stmt = $pdo->prepare("
-    SELECT w.id,w.withdraw_no,w.created_at,u.facility_name,u.name AS user_name,u.username
+    SELECT w.id,w.withdraw_no,w.created_at,u.facility_name,u.name AS user_name,u.username,
+      (SELECT COUNT(*) FROM withdrawal_items wi WHERE wi.withdrawal_id = w.id) AS item_count
     FROM withdrawals w
     JOIN users u ON u.id=w.user_id
     WHERE $where AND w.status=?
@@ -82,13 +83,13 @@ $statusMeta = [
 <?php define('DRUG_WITHDRAW_APP_STYLES', true); ?>
 </head>
 
-<body class="app-page">
+<body class="app-page dashboard-page">
 <?php include __DIR__ . '/includes/nav.php'; ?>
 
-<main class="app-ui app-container">
-  <section class="app-card dashboard-header" aria-labelledby="dashboard-title">
-    <div>
-      <p class="dashboard-kicker">ระบบเบิกยา CUP สันกำแพง</p>
+<main class="app-ui app-container dashboard-main">
+  <section class="dashboard-header" aria-labelledby="dashboard-title">
+    <div class="dashboard-header__intro">
+      <p class="dashboard-kicker">DASHBOARD</p>
       <h1 id="dashboard-title" class="dashboard-title">สวัสดี <?= e($user['name'] ?? $user['username']) ?></h1>
       <p class="dashboard-subtitle">ภาพรวมใบเบิกและงานที่ต้องดำเนินการในขอบเขตของคุณ</p>
       <div class="dashboard-context" aria-label="ข้อมูลผู้ใช้และขอบเขต">
@@ -119,7 +120,7 @@ $statusMeta = [
     </div>
   <?php endif; ?>
 
-  <section class="app-card dashboard-search" aria-label="ค้นหาใบเบิก">
+  <section class="dashboard-search" aria-label="ค้นหาใบเบิก">
     <form method="get" class="dashboard-search__form">
       <label for="dashboard-search" class="dashboard-search__label">เลขที่ใบเบิก สถานบริการ หรือผู้สร้าง</label>
       <input id="dashboard-search" type="search" name="q" value="<?= e($q) ?>" class="app-field" placeholder="ค้นหาเลขที่ใบเบิก สถานบริการ หรือผู้สร้าง">
@@ -134,34 +135,45 @@ $statusMeta = [
         <span class="dashboard-stat__label"><span class="dashboard-stat__dot" aria-hidden="true"></span><?= e($meta['title']) ?></span>
         <span class="dashboard-stat__count"><?= (int)$counts[$st] ?></span>
         <span class="dashboard-stat__desc"><?= e($meta['desc']) ?></span>
-        <span class="dashboard-stat__action">ดูรายการ →</span>
+        <span class="dashboard-stat__action">ดูรายการ <span aria-hidden="true">→</span></span>
       </button>
     <?php endforeach; ?>
   </section>
 
-  <section class="app-card dashboard-work" aria-labelledby="work-title">
+  <section class="dashboard-work" aria-labelledby="work-title">
     <div class="dashboard-section-head">
       <div>
         <h2 id="work-title" class="dashboard-section-title"><?= e($taskTitle) ?></h2>
         <div class="dashboard-section-note"><?= e($taskNote) ?> · <?= (int)$counts[$taskStatus] ?> รายการ</div>
       </div>
+      <?php if ($isManager): ?><a href="admin_all_withdrawals.php" class="dashboard-work__all">ดูทั้งหมด <span aria-hidden="true">→</span></a><?php endif; ?>
     </div>
 
     <?php if (empty($withdrawals[$taskStatus])): ?>
-      <div class="app-empty">ไม่มีงานค้างในขณะนี้</div>
+      <p class="dashboard-work__empty">ไม่มีงานค้างในขณะนี้</p>
     <?php else: ?>
-      <div class="dashboard-work-list">
-        <?php foreach ($withdrawals[$taskStatus] as $w): ?>
-          <a href="view_withdrawal.php?id=<?= (int)$w['id'] ?>" class="dashboard-work-row">
-            <div class="dashboard-work-row__main">
-              <div class="dashboard-work-row__code"><?= e(format_withdraw_code($w['withdraw_no'])) ?></div>
-              <div class="dashboard-work-row__place">สถานบริการ: <?= e($w['facility_name']) ?></div>
-              <div class="dashboard-work-row__meta">สร้างโดย: <?= e($w['user_name']) ?> · Username: <?= e($w['username']) ?></div>
-            </div>
-            <div class="dashboard-work-row__date"><?= e(format_thai_datetime($w['created_at'])) ?></div>
-          </a>
-        <?php endforeach; ?>
-      </div>
+      <table class="dashboard-work__table">
+        <thead><tr>
+          <th scope="col">เลขใบเบิก</th>
+          <th scope="col">สถานบริการ</th>
+          <th scope="col">ผู้เบิก</th>
+          <th scope="col">วันที่สร้าง</th>
+          <th scope="col">จำนวนรายการ</th>
+          <th scope="col">ดำเนินการ</th>
+        </tr></thead>
+        <tbody>
+          <?php foreach ($withdrawals[$taskStatus] as $w): ?>
+            <tr>
+              <td class="dashboard-work__code"><?= e(format_withdraw_code($w['withdraw_no'])) ?></td>
+              <td class="dashboard-work__facility"><?= e($w['facility_name']) ?></td>
+              <td class="dashboard-work__user"><?= e($w['user_name']) ?><small><?= e($w['username']) ?></small></td>
+              <td class="dashboard-work__date"><?= e(format_thai_datetime($w['created_at'])) ?></td>
+              <td class="dashboard-work__count"><?= (int)$w['item_count'] ?> รายการ</td>
+              <td class="dashboard-work__action"><a href="view_withdrawal.php?id=<?= (int)$w['id'] ?>">ตรวจใบเบิก <span aria-hidden="true">→</span></a></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
     <?php endif; ?>
   </section>
 
