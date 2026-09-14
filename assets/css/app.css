@@ -2581,3 +2581,144 @@
   .users-admin-page .modal-head { padding: 14px 15px 11px; }
   .users-admin-page .modal-body { padding: 14px 15px 16px; }
 }
+
+/* Zone administration: one document-scrolling workspace, independent of Tailwind CDN. */
+.zones-admin-page { background: #fff; }
+.zones-admin-page .app-footer { border-top-color: #a9bfce; background: #f5f9fd; }
+.zones-admin-main { box-sizing: border-box; width: min(var(--app-container), calc(100% - 32px)); min-width: 0; flex: 1 0 auto; margin: 0 auto 40px; padding-bottom: 28px; }
+.zones-admin-page .zones-admin-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 24px 0 20px; border-bottom: 2px solid #a9bfce; }
+.zones-admin-page .zones-admin-header > div { min-width: 0; }
+.zones-admin-page .zones-admin-header h1 { margin: 0; color: #172f45; font-size: clamp(22px, 2.3vw, 29px); line-height: 1.3; font-weight: 800; }
+.zones-admin-page .zones-admin-header p, .zones-admin-page .zones-admin-section__head p { margin: 5px 0 0; color: #52667a; font-size: 13px; line-height: 1.6; }
+.zones-admin-page .zones-admin-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 7px 12px; border: 1px solid #c8d6e0; border-radius: 7px; background: #fff; color: #154360; cursor: pointer; font: inherit; font-size: 12px; font-weight: 750; line-height: 1.3; text-align: center; text-decoration: none; white-space: nowrap; }
+.zones-admin-page .zones-admin-button:hover { background: #eff6ff; border-color: #90b2c7; }
+.zones-admin-page .zones-admin-button--primary { border-color: #0f766e; background: #0f766e; color: #fff; }
+.zones-admin-page .zones-admin-button--primary:hover { background: #115e59; color: #fff; }
+.zones-admin-page .zones-admin-button--danger { color: #b91c1c; border-color: #fecaca; }
+.zones-admin-page .zones-admin-button--danger:hover { background: #fff1f2; }
+.zones-admin-page .zones-admin-button:disabled { opacity: .45; cursor: not-allowed; }
+.zones-admin-page .zones-admin-notice { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 14px; padding: 10px 12px; border-left: 3px solid; font-size: 13px; line-height: 1.6; }
+.zones-admin-page .zones-admin-notice--success { color: #166534; border-color: #15803d; background: #ecfdf3; }
+.zones-admin-page .zones-admin-notice--error { color: #991b1b; border-color: #dc2626; background: #fef2f2; }
+.zones-admin-page .zones-admin-notice--warning { color: #92400e; border-color: #d97706; background: #fffaf0; }
+.zones-admin-page .zones-admin-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 8px; border-bottom: 1px solid #a9bfce; }
+.zones-admin-page .zones-admin-summary > div { min-width: 0; padding: 16px 14px; border-right: 1px solid #c8d6e0; }
+.zones-admin-page .zones-admin-summary > div:first-child { padding-left: 0; }
+.zones-admin-page .zones-admin-summary > div:last-child { border-right: 0; }
+.zones-admin-page .zones-admin-summary span { display: block; color: #52667a; font-size: 12px; font-weight: 700; }
+.zones-admin-page .zones-admin-summary strong { display: block; margin-top: 2px; color: #154360; font-size: 25px; line-height: 1.2; font-weight: 800; }
+.zones-admin-page .zones-admin-section { min-width: 0; padding: 22px 0 20px; border-bottom: 2px solid #a9bfce; }
+.zones-admin-page .zones-admin-section__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.zones-admin-page .zones-admin-section__head h2 { margin: 0; color: #172f45; font-size: 17px; font-weight: 800; }
+.zones-admin-page .zones-admin-section__head p { margin-top: 2px; font-size: 12px; }
+.zones-admin-page .zones-admin-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 4px 0 14px; }
+.zones-admin-page .zones-admin-search { flex: 1 1 260px; width: auto; min-width: 0; min-height: 42px; padding: 8px 11px; border: 1px solid #b9cad7; border-radius: 7px; background: #fff; color: #172033; font: inherit; font-size: 13px; }
+.zones-admin-page .zones-admin-select-all { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; color: #334155; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.zones-admin-page .zones-admin-select-all input, .zones-admin-page .zones-admin-check input { width: 17px; height: 17px; margin: 0; accent-color: #0f766e; cursor: pointer; }
+.zones-admin-page .zones-admin-table-wrap { max-width: 100%; min-width: 0; overflow-x: auto; overflow-y: visible; }
+.zones-admin-page .zones-admin-table { width: 100%; border-collapse: collapse; table-layout: fixed; color: #172033; font-size: 12px; line-height: 1.5; }
+.zones-admin-page .zones-admin-table th { padding: 10px 8px; border-bottom: 1px solid #a9bfce; color: #334155; background: #f5f9fd; text-align: left; font-size: 12px; font-weight: 800; }
+.zones-admin-page .zones-admin-table td { min-width: 0; padding: 12px 8px; border-bottom: 1px solid #c8d6e0; vertical-align: middle; overflow-wrap: anywhere; }
+.zones-admin-page .zones-admin-table tbody tr:hover { background: #f8fbfd; }
+.zones-admin-page .zones-admin-table tr[hidden] { display: none !important; }
+.zones-admin-page .zones-admin-zone-table th:nth-child(1) { width: 13%; }
+.zones-admin-page .zones-admin-zone-table th:nth-child(2) { width: 28%; }
+.zones-admin-page .zones-admin-zone-table th:nth-child(3), .zones-admin-page .zones-admin-zone-table th:nth-child(4) { width: 12%; }
+.zones-admin-page .zones-admin-zone-table th:nth-child(5) { width: 13%; }
+.zones-admin-page .zones-admin-zone-table th:nth-child(6) { width: 22%; }
+.zones-admin-page .zones-admin-facility-table th:nth-child(1) { width: 7%; }
+.zones-admin-page .zones-admin-facility-table th:nth-child(2) { width: 13%; }
+.zones-admin-page .zones-admin-facility-table th:nth-child(3) { width: 43%; }
+.zones-admin-page .zones-admin-facility-table th:nth-child(4) { width: 23%; }
+.zones-admin-page .zones-admin-facility-table th:nth-child(5) { width: 14%; }
+.zones-admin-page .zones-admin-user-table th:nth-child(1) { width: 19%; }
+.zones-admin-page .zones-admin-user-table th:nth-child(2) { width: 14%; }
+.zones-admin-page .zones-admin-user-table th:nth-child(3) { width: 10%; }
+.zones-admin-page .zones-admin-user-table th:nth-child(4) { width: 27%; }
+.zones-admin-page .zones-admin-user-table th:nth-child(5) { width: 15%; }
+.zones-admin-page .zones-admin-user-table th:nth-child(6) { width: 15%; }
+.zones-admin-page .zones-admin-code { color: #154360; font-family: Consolas, 'Courier New', monospace; font-size: 12px; font-weight: 750; }
+.zones-admin-page .zones-admin-identity { color: #172f45; font-weight: 750; }
+.zones-admin-page .zones-admin-identity strong { display: block; }
+.zones-admin-page .zones-admin-identity small, .zones-admin-page .zones-admin-scope small, .zones-admin-page .zones-admin-user-status small { display: block; margin-top: 3px; color: #64748b; font-size: 11px; font-weight: 500; }
+.zones-admin-page .zones-admin-count, .zones-admin-page .zones-admin-position, .zones-admin-page .zones-admin-scope { color: #334155; }
+.zones-admin-page .zones-admin-actions { white-space: normal; }
+.zones-admin-page .zones-admin-actions .zones-admin-button { min-height: 34px; margin: 2px 4px 2px 0; padding: 5px 9px; }
+.zones-admin-page .zones-admin-badge { display: inline-block; padding: 3px 7px; border-radius: 5px; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.zones-admin-page .zones-admin-badge--on { color: #166534; background: #dcfce7; }
+.zones-admin-page .zones-admin-badge--off { color: #991b1b; background: #fee2e2; }
+.zones-admin-page .zones-admin-badge--admin { color: #1d4ed8; background: #dbeafe; }
+.zones-admin-page .zones-admin-badge--neutral { color: #475569; background: #f1f5f9; }
+.zones-admin-page .zones-admin-section--audit { border-bottom: 0; }
+.zones-admin-page .zones-admin-section--audit summary { padding: 4px 0 12px; color: #172f45; font-size: 17px; font-weight: 800; cursor: pointer; }
+.zones-admin-page .zones-admin-audit-table th { width: 25%; }
+.zones-admin-page .zones-admin-audit-table td { vertical-align: top; }
+.zones-admin-page dialog, .zones-admin-page dialog * { box-sizing: border-box; }
+.zones-admin-page dialog { width: min(560px, calc(100% - 24px)); max-width: calc(100% - 24px); max-height: calc(100dvh - 24px); padding: 0; overflow-y: auto; overflow-x: hidden; border: 1px solid #c8d6e0; border-radius: 11px; color: #172033; background: #fff; box-shadow: 0 20px 55px rgba(15, 23, 42, .22); font-family: var(--app-font); }
+.zones-admin-page #newZone { width: min(480px, calc(100% - 24px)); }
+.zones-admin-page #zoneEditDialog, .zones-admin-page #bulkMoveDialog { width: min(520px, calc(100% - 24px)); }
+.zones-admin-page #userDialog { width: min(680px, calc(100% - 24px)); }
+.zones-admin-page dialog::backdrop { background: rgba(15, 23, 42, .6); }
+.zones-admin-page dialog > form, .zones-admin-page #userDialog > div { padding: 22px; }
+.zones-admin-page dialog h2 { margin: 0; color: #172f45; font-size: 19px; line-height: 1.4; font-weight: 800; }
+.zones-admin-page #zoneDeleteDialog h2 { color: #b91c1c; }
+.zones-admin-page dialog p { margin: 10px 0 0; color: #52667a; font-size: 12px; line-height: 1.55; }
+.zones-admin-page dialog label { display: block; margin-top: 14px; color: #334155; font-size: 12px; line-height: 1.5; font-weight: 750; }
+.zones-admin-page dialog label:has(> input[type='checkbox']) { display: flex; align-items: center; gap: 8px; }
+.zones-admin-page dialog input:not([type='hidden']):not([type='checkbox']), .zones-admin-page dialog select { display: block; width: 100%; min-width: 0; height: 42px; margin-top: 5px; padding: 8px 11px; border: 1px solid #c8d6e0; border-radius: 7px; color: #172033; background: #fff; font: inherit; font-size: 13px; }
+.zones-admin-page dialog input[type='checkbox'] { width: 17px; height: 17px; margin: 0; accent-color: #0f766e; }
+.zones-admin-page dialog input[readonly] { background: #f5f9fd !important; }
+.zones-admin-page dialog input[name='confirm_zone_code'], .zones-admin-page dialog input[name='confirm_username'] { border-color: #fca5a5 !important; }
+.zones-admin-page dialog form > div.flex.justify-end { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.zones-admin-page dialog button { min-height: 40px; padding: 7px 13px; border: 1px solid #c8d6e0; border-radius: 7px; color: #154360; background: #fff; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+.zones-admin-page dialog button:not([type='button']) { border-color: #0f766e; color: #fff; background: #0f766e; }
+.zones-admin-page #zoneDeleteDialog button:not([type='button']) { border-color: #b91c1c; background: #b91c1c; }
+.zones-admin-page #userDialog form:last-child button { margin-top: 10px; border-color: #fca5a5; color: #b91c1c; background: #fff; }
+.zones-admin-page #userDialog form[hidden], .zones-admin-page #userZoneField.hidden, .zones-admin-page #userFacilityField.hidden { display: none !important; }
+.zones-admin-page #zoneDeleteDialog form > div.bg-amber-50, .zones-admin-page #userDialog form > div.bg-blue-50 { margin-top: 14px; padding: 11px 12px; border-left: 3px solid #d97706; color: #92400e; background: #fffaf0; font-size: 12px; line-height: 1.6; }
+.zones-admin-page #userDialog form > div.bg-blue-50 { border-left-color: #0f766e; color: #33576a; background: #f5fafb; }
+.zones-admin-page #userDialog #userEditForm > div.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; margin-top: 8px; }
+.zones-admin-page #userDialog #userEditForm > div.grid > label:first-child { grid-column: 1 / -1; }
+.zones-admin-page #userDialog #userEditForm > div.grid > label { min-width: 0; }
+.zones-admin-page #userDialog #userZoneField { margin-top: 12px; }
+.zones-admin-page #userDialog #userZoneField > div:first-child { color: #334155; font-size: 12px; font-weight: 750; }
+.zones-admin-page #userDialog #userZoneField > div.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 7px; }
+.zones-admin-page #userDialog #userZoneField label { display: flex; align-items: center; gap: 8px; min-width: 0; margin: 0; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; background: #f8fafc; overflow-wrap: anywhere; }
+.zones-admin-page #userDialog hr { margin: 20px 0; border: 0; border-top: 1px solid #c8d6e0; }
+
+@media (max-width: 900px) {
+  .zones-admin-page .zones-admin-table, .zones-admin-page .zones-admin-table tbody { display: block; }
+  .zones-admin-page .zones-admin-table thead { display: none; }
+  .zones-admin-page .zones-admin-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 14px; padding: 13px 0; border-bottom: 1px solid #c8d6e0; }
+  .zones-admin-page .zones-admin-table td { display: block; padding: 0; border: 0; }
+  .zones-admin-page .zones-admin-table-wrap { overflow: visible; }
+  .zones-admin-page .zones-admin-zone-table .zones-admin-code, .zones-admin-page .zones-admin-zone-table .zones-admin-identity, .zones-admin-page .zones-admin-zone-table .zones-admin-status-cell, .zones-admin-page .zones-admin-zone-table .zones-admin-actions { grid-column: 1 / -1; }
+  .zones-admin-page .zones-admin-facility-table tr { grid-template-columns: 25px minmax(0, 1fr) minmax(0, 1fr); }
+  .zones-admin-page .zones-admin-facility-table .zones-admin-check { grid-row: 1 / 4; align-self: start; padding-top: 2px; }
+  .zones-admin-page .zones-admin-facility-table .zones-admin-code { grid-column: 2; }
+  .zones-admin-page .zones-admin-facility-table .zones-admin-identity { grid-column: 3; }
+  .zones-admin-page .zones-admin-facility-table .zones-admin-scope, .zones-admin-page .zones-admin-facility-table .zones-admin-actions { grid-column: 2 / -1; }
+  .zones-admin-page .zones-admin-user-table .zones-admin-identity, .zones-admin-page .zones-admin-user-table .zones-admin-scope, .zones-admin-page .zones-admin-user-table .zones-admin-actions { grid-column: 1 / -1; }
+  .zones-admin-page .zones-admin-table td[data-label]::before { content: attr(data-label) ' '; display: inline; color: #64748b; font-size: 11px; font-weight: 650; }
+  .zones-admin-page .zones-admin-audit-table td::before { display: block !important; }
+}
+@media (max-width: 620px) {
+  .zones-admin-main { width: calc(100% - 24px); margin-bottom: 22px; padding-bottom: 18px; }
+  .zones-admin-page .zones-admin-header { align-items: flex-start; flex-direction: column; gap: 12px; padding: 20px 0 16px; }
+  .zones-admin-page .zones-admin-header .zones-admin-button { width: 100%; min-height: 42px; }
+  .zones-admin-page .zones-admin-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .zones-admin-page .zones-admin-summary > div { padding: 12px 9px; }
+  .zones-admin-page .zones-admin-summary > div:first-child { padding-left: 9px; }
+  .zones-admin-page .zones-admin-summary > div:nth-child(2) { border-right: 0; }
+  .zones-admin-page .zones-admin-summary > div:nth-child(-n+2) { border-bottom: 1px solid #c8d6e0; }
+  .zones-admin-page .zones-admin-summary strong { font-size: 21px; }
+  .zones-admin-page .zones-admin-section { padding: 18px 0; }
+  .zones-admin-page .zones-admin-toolbar .zones-admin-search { flex-basis: 100%; }
+  .zones-admin-page .zones-admin-toolbar .zones-admin-select-all { flex: 1 1 auto; }
+  .zones-admin-page .zones-admin-facility-table tr { grid-template-columns: 24px minmax(0, 1fr); gap: 5px 9px; }
+  .zones-admin-page .zones-admin-facility-table .zones-admin-check { grid-row: 1 / 5; }
+  .zones-admin-page .zones-admin-facility-table .zones-admin-code, .zones-admin-page .zones-admin-facility-table .zones-admin-identity, .zones-admin-page .zones-admin-facility-table .zones-admin-scope, .zones-admin-page .zones-admin-facility-table .zones-admin-actions { grid-column: 2; }
+  .zones-admin-page .zones-admin-user-table tr { gap: 7px 10px; }
+  .zones-admin-page dialog > form, .zones-admin-page #userDialog > div { padding: 15px; }
+  .zones-admin-page #userDialog #userEditForm > div.grid, .zones-admin-page #userDialog #userZoneField > div.grid { grid-template-columns: minmax(0, 1fr); }
+}

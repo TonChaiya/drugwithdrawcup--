@@ -281,41 +281,77 @@ $unassignedAdmins = count(array_filter($admins, static fn($a) => empty($assignme
 $recentAudits = $pdo->query('SELECT a.*, u.name actor_name FROM zone_audit_logs a LEFT JOIN users u ON u.id=a.actor_user_id ORDER BY a.id DESC LIMIT 30')->fetchAll();
 ?>
 <!doctype html>
-<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="https://cdn.tailwindcss.com"></script><title>เขตบริการและลูกข่าย</title><style>dialog{max-height:calc(100vh - 2rem);overflow:auto}dialog::backdrop{background:rgba(15,23,42,.62);backdrop-filter:blur(3px)}tr[hidden]{display:none}</style></head>
-<body class="bg-slate-50 text-slate-900">
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>เขตบริการและลูกข่าย</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="assets/css/app.css">
+  <?php define('DRUG_WITHDRAW_APP_STYLES', true); ?>
+</head>
+<body class="app-page zones-admin-page">
 <?php include __DIR__ . '/includes/nav.php'; ?>
-<main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1">
-  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
-    <div><h1 class="text-2xl font-bold">เขตบริการและลูกข่าย</h1><p class="text-sm text-slate-500 mt-1">กำหนดขอบเขตที่ผู้ดูแลแต่ละเขตมองเห็น การเปลี่ยนทุกครั้งถูกบันทึกประวัติ</p></div>
-    <button type="button" onclick="document.getElementById('newZone').showModal()" class="rounded-xl bg-blue-600 text-white px-4 py-2.5 font-semibold">+ เพิ่มเขตบริการ</button>
-  </div>
-  <?php if ($message): ?><div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 p-3"><?= e($message) ?></div><?php endif; ?>
-  <?php if ($error): ?><div class="mb-4 rounded-xl border border-red-200 bg-red-50 text-red-800 p-3"><?= e($error) ?></div><?php endif; ?>
-  <?php if ($unassignedFacilities || $unassignedAdmins): ?><div class="mb-5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 p-4"><strong>ต้องตรวจสอบการกำหนดขอบเขต</strong><div class="text-sm mt-1">สถานบริการยังไม่อยู่ในเขต <?= $unassignedFacilities ?> แห่ง · ผู้ดูแลยังไม่มีเขต <?= $unassignedAdmins ?> บัญชี</div></div><?php endif; ?>
+<main class="app-ui zones-admin-main">
+  <header class="zones-admin-header">
+    <div>
+      <h1>เขตบริการและลูกข่าย</h1>
+      <p>กำหนดขอบเขตที่ผู้ดูแลแต่ละเขตมองเห็น การเปลี่ยนทุกครั้งถูกบันทึกประวัติ</p>
+    </div>
+    <button type="button" onclick="document.getElementById('newZone').showModal()" class="zones-admin-button zones-admin-button--primary">+ เพิ่มเขตบริการ</button>
+  </header>
+  <?php if ($message): ?><div class="zones-admin-notice zones-admin-notice--success"><?= e($message) ?></div><?php endif; ?>
+  <?php if ($error): ?><div class="zones-admin-notice zones-admin-notice--error"><?= e($error) ?></div><?php endif; ?>
+  <?php if ($unassignedFacilities || $unassignedAdmins): ?><div class="zones-admin-notice zones-admin-notice--warning"><strong>ต้องตรวจสอบการกำหนดขอบเขต</strong><span>สถานบริการยังไม่อยู่ในเขต <?= $unassignedFacilities ?> แห่ง · ผู้ดูแลยังไม่มีเขต <?= $unassignedAdmins ?> บัญชี</span></div><?php endif; ?>
 
-  <section class="grid sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-5">
-    <div class="bg-white rounded-2xl border p-4"><div class="text-sm text-slate-500">โซนทั้งหมด</div><strong class="text-2xl"><?= count($zones) ?></strong></div>
-    <div class="bg-white rounded-2xl border p-4"><div class="text-sm text-slate-500">สถานบริการ</div><strong class="text-2xl"><?= count($facilities) ?></strong></div>
-    <div class="bg-white rounded-2xl border p-4"><div class="text-sm text-slate-500">ผู้ดูแลเขต</div><strong class="text-2xl"><?= count($admins) ?></strong></div>
-    <div class="bg-white rounded-2xl border p-4"><div class="text-sm text-slate-500">ผู้ใช้ที่จัดการได้</div><strong class="text-2xl"><?= count($managedUsers) ?></strong></div>
+  <section class="zones-admin-summary" aria-label="สรุปเขตบริการ">
+    <div><span>โซนทั้งหมด</span><strong><?= count($zones) ?></strong></div>
+    <div><span>สถานบริการ</span><strong><?= count($facilities) ?></strong></div>
+    <div><span>ผู้ดูแลเขต</span><strong><?= count($admins) ?></strong></div>
+    <div><span>ผู้ใช้ที่จัดการได้</span><strong><?= count($managedUsers) ?></strong></div>
   </section>
 
-  <section class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><h2 class="text-lg font-bold">โซนบริการ</h2><p class="text-sm text-slate-500">แก้ไข ระงับ รวม หรือลบโซน โดยไม่แตะใบเบิกย้อนหลัง</p></div></div>
-    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-3 mt-4"><?php foreach ($zones as $z): ?><article class="rounded-xl border <?= (int)$z['is_active'] ? 'border-slate-200' : 'border-amber-200 bg-amber-50' ?> p-4"><div class="flex justify-between gap-3"><div><div class="font-mono text-xs text-slate-500"><?= e($z['zone_code']) ?></div><div class="font-bold mt-1"><?= e($z['zone_name']) ?></div></div><span class="text-xs rounded-full px-2 py-1 h-fit <?= (int)$z['is_active'] ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' ?>"><?= (int)$z['is_active'] ? 'เปิดใช้' : 'ระงับ' ?></span></div><div class="text-sm text-slate-500 mt-3"><?= (int)$z['facility_count'] ?> สถานบริการ · <?= (int)$z['admin_count'] ?> ผู้ดูแล</div><div class="flex gap-2 mt-3"><button type="button" onclick='openZoneEdit(<?= json_encode($z, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)' class="rounded-lg border px-3 py-2 text-sm font-semibold">แก้ไข</button><button type="button" onclick='openZoneDelete(<?= json_encode($z, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)' class="rounded-lg border border-red-200 text-red-700 px-3 py-2 text-sm font-semibold">รวม/ลบ</button></div></article><?php endforeach; ?></div>
+  <section class="zones-admin-section">
+    <div class="zones-admin-section__head"><div><h2>โซนบริการ</h2><p>แก้ไข ระงับ รวม หรือลบโซน โดยไม่แตะใบเบิกย้อนหลัง</p></div></div>
+    <div class="zones-admin-table-wrap"><table class="zones-admin-table zones-admin-zone-table"><thead><tr><th>รหัส</th><th>ชื่อเขต</th><th>สถานบริการ</th><th>ผู้ดูแล</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>
+    <?php foreach ($zones as $z): ?><tr>
+      <td class="zones-admin-code"><?= e($z['zone_code']) ?></td>
+      <td class="zones-admin-identity"><?= e($z['zone_name']) ?></td>
+      <td class="zones-admin-count" data-label="สถานบริการ"><?= (int)$z['facility_count'] ?> แห่ง</td>
+      <td class="zones-admin-count" data-label="ผู้ดูแล"><?= (int)$z['admin_count'] ?> คน</td>
+      <td class="zones-admin-status-cell"><span class="zones-admin-badge <?= (int)$z['is_active'] ? 'zones-admin-badge--on' : 'zones-admin-badge--off' ?>"><?= (int)$z['is_active'] ? 'เปิดใช้งาน' : 'ระงับ' ?></span></td>
+      <td class="zones-admin-actions"><button type="button" onclick='openZoneEdit(<?= json_encode($z, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)' class="zones-admin-button">แก้ไข</button><button type="button" onclick='openZoneDelete(<?= json_encode($z, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)' class="zones-admin-button zones-admin-button--danger">รวม/ลบ</button></td>
+    </tr><?php endforeach; ?></tbody></table></div>
   </section>
 
-  <section class="mt-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3"><div><h2 class="text-lg font-bold">สถานบริการในโซน</h2><p class="text-sm text-slate-500">เลือกหลายแห่งเพื่อย้ายพร้อมกัน หรือแก้ไขทีละแห่ง</p></div><div class="flex flex-wrap gap-2"><input id="facilitySearch" oninput="filterRows('facilitySearch','facilityRow')" type="search" placeholder="ค้นหา host_code ชื่อ หรือโซน" class="h-10 rounded-xl border px-3 min-w-[260px]"><button type="button" onclick="openFacility()" class="rounded-xl bg-slate-900 text-white px-4 py-2 font-semibold">+ เพิ่มสถานบริการ</button><button id="bulkMoveButton" type="button" onclick="openBulkMove()" class="rounded-xl bg-blue-600 text-white px-4 py-2 font-semibold disabled:opacity-40" disabled>ย้ายที่เลือก</button></div></div>
-    <div class="mt-4 max-h-[460px] overflow-auto border rounded-xl"><table class="w-full text-sm min-w-[720px]"><thead class="sticky top-0 bg-slate-100"><tr><th class="p-3"><input id="facilityAll" type="checkbox" onchange="toggleVisibleFacilities(this.checked)"></th><th class="text-left p-3">รหัส</th><th class="text-left p-3">สถานบริการ</th><th class="text-left p-3">โซน</th><th class="p-3">จัดการ</th></tr></thead><tbody><?php foreach ($facilities as $f): ?><tr class="facilityRow border-t" data-search="<?= e(mb_strtolower($f['host_code'].' '.$f['facility_name'].' '.($f['zone_name'] ?? ''))) ?>"><td class="p-3 text-center"><input class="facilityCheck" type="checkbox" value="<?= e($f['host_code']) ?>" onchange="updateBulkButton()"></td><td class="p-3 font-mono"><?= e($f['host_code']) ?></td><td class="p-3"><?= e($f['facility_name']) ?></td><td class="p-3"><?= e($f['zone_name'] ?: 'ยังไม่กำหนด') ?></td><td class="p-3 text-center"><button type="button" onclick='openFacility(<?= json_encode($f, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)' class="text-blue-700 font-semibold">แก้ไข/ย้าย</button></td></tr><?php endforeach; ?></tbody></table></div>
+  <section class="zones-admin-section">
+    <div class="zones-admin-section__head"><div><h2>สถานบริการในโซน</h2><p>เลือกหลายแห่งเพื่อย้ายพร้อมกัน หรือแก้ไขทีละแห่ง</p></div></div>
+    <div class="zones-admin-toolbar"><input id="facilitySearch" oninput="filterRows('facilitySearch','facilityRow')" type="search" placeholder="ค้นหา host_code ชื่อ หรือโซน" aria-label="ค้นหาสถานบริการ" class="zones-admin-search"><label class="zones-admin-select-all"><input id="facilityAll" type="checkbox" onchange="toggleVisibleFacilities(this.checked)"><span>เลือกที่เห็น</span></label><button type="button" onclick="openFacility()" class="zones-admin-button">+ เพิ่มสถานบริการ</button><button id="bulkMoveButton" type="button" onclick="openBulkMove()" class="zones-admin-button zones-admin-button--primary" disabled>ย้ายที่เลือก</button></div>
+    <div class="zones-admin-table-wrap"><table class="zones-admin-table zones-admin-facility-table"><thead><tr><th>เลือก</th><th>รหัส</th><th>สถานบริการ</th><th>โซน</th><th>จัดการ</th></tr></thead><tbody>
+    <?php foreach ($facilities as $f): ?><tr class="facilityRow" data-search="<?= e(mb_strtolower($f['host_code'].' '.$f['facility_name'].' '.($f['zone_name'] ?? ''))) ?>">
+      <td class="zones-admin-check"><input class="facilityCheck" type="checkbox" value="<?= e($f['host_code']) ?>" onchange="updateBulkButton()" aria-label="เลือกสถานบริการ <?= e($f['host_code']) ?>"></td>
+      <td class="zones-admin-code"><?= e($f['host_code']) ?></td>
+      <td class="zones-admin-identity"><?= e($f['facility_name']) ?></td>
+      <td class="zones-admin-scope" data-label="โซน"><?= e($f['zone_name'] ?: 'ยังไม่กำหนด') ?></td>
+      <td class="zones-admin-actions"><button type="button" onclick='openFacility(<?= json_encode($f, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>)' class="zones-admin-button">แก้ไข/ย้าย</button></td>
+    </tr><?php endforeach; ?></tbody></table></div>
   </section>
 
-  <section class="mt-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><h2 class="text-lg font-bold">ผู้ใช้และผู้ดูแลเขต</h2><p class="text-sm text-slate-500">การย้ายบัญชีไม่มีผลกับใบเบิกที่สร้างไว้แล้ว</p></div><div class="flex flex-wrap gap-2"><input id="userSearch" oninput="filterRows('userSearch','userRow')" type="search" placeholder="ค้นหาชื่อ Username สถานบริการ หรือโซน" class="h-10 rounded-xl border px-3 min-w-[300px]"><a href="register.php?new=1" class="rounded-xl bg-slate-900 text-white px-4 py-2 font-semibold">+ เพิ่มผู้ใช้</a></div></div>
-    <div class="mt-4 max-h-[520px] overflow-auto border rounded-xl"><table class="w-full text-sm min-w-[900px]"><thead class="sticky top-0 bg-slate-100"><tr><th class="text-left p-3">ผู้ใช้</th><th class="text-left p-3">ตำแหน่ง</th><th class="text-left p-3">ระดับ</th><th class="text-left p-3">สถานบริการ/ขอบเขต</th><th class="text-left p-3">สถานะ</th><th class="p-3">จัดการ</th></tr></thead><tbody><?php foreach ($managedUsers as $u): ?><tr class="userRow border-t" data-search="<?= e(mb_strtolower($u['name'].' '.$u['username'].' '.$u['position'].' '.$u['host_code'].' '.$u['facility_name'].' '.$u['zone_names'])) ?>"><td class="p-3"><strong><?= e($u['name']) ?></strong><div class="text-xs text-slate-500">@<?= e($u['username']) ?></div></td><td class="p-3"><?= e($u['position']) ?></td><td class="p-3"><span class="rounded-full px-2 py-1 text-xs <?= $u['role']==='admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100' ?>"><?= e(role_label($u['role'])) ?></span></td><td class="p-3"><?php if($u['role']==='admin'): ?><?= e($u['zone_names'] ?: 'ยังไม่มีเขต') ?><?php else: ?><?= e($u['facility_name']) ?><div class="text-xs font-mono text-slate-500"><?= e($u['host_code']) ?></div><?php endif; ?></td><td class="p-3"><?= (int)$u['is_active'] ? 'เปิดใช้งาน' : 'ระงับ' ?> · <?= e(approval_label($u['approval_status'])) ?></td><td class="p-3 text-center"><button type="button" onclick='openUserEdit(<?= json_encode($u, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>,<?= json_encode($assignments[(int)$u['id']] ?? []) ?>)' class="text-blue-700 font-semibold">แก้ไข/ย้าย</button></td></tr><?php endforeach; ?></tbody></table></div>
+  <section class="zones-admin-section">
+    <div class="zones-admin-section__head"><div><h2>ผู้ใช้และผู้ดูแลเขต</h2><p>การย้ายบัญชีไม่มีผลกับใบเบิกที่สร้างไว้แล้ว</p></div></div>
+    <div class="zones-admin-toolbar"><input id="userSearch" oninput="filterRows('userSearch','userRow')" type="search" placeholder="ค้นหาชื่อ Username สถานบริการ หรือโซน" aria-label="ค้นหาผู้ใช้" class="zones-admin-search"><a href="register.php?new=1" class="zones-admin-button">+ เพิ่มผู้ใช้</a></div>
+    <div class="zones-admin-table-wrap"><table class="zones-admin-table zones-admin-user-table"><thead><tr><th>ผู้ใช้</th><th>ตำแหน่ง</th><th>ระดับ</th><th>สถานบริการ/ขอบเขต</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>
+    <?php foreach ($managedUsers as $u): ?><tr class="userRow" data-search="<?= e(mb_strtolower($u['name'].' '.$u['username'].' '.$u['position'].' '.$u['host_code'].' '.$u['facility_name'].' '.$u['zone_names'])) ?>">
+      <td class="zones-admin-identity"><strong><?= e($u['name']) ?></strong><small>@<?= e($u['username']) ?></small></td>
+      <td class="zones-admin-position" data-label="ตำแหน่ง"><?= e($u['position']) ?></td>
+      <td class="zones-admin-role" data-label="ระดับ"><span class="zones-admin-badge <?= $u['role']==='admin' ? 'zones-admin-badge--admin' : 'zones-admin-badge--neutral' ?>"><?= e(role_label($u['role'])) ?></span></td>
+      <td class="zones-admin-scope" data-label="ขอบเขต"><?php if($u['role']==='admin'): ?><?= e($u['zone_names'] ?: 'ยังไม่มีเขต') ?><?php else: ?><?= e($u['facility_name']) ?><small><?= e($u['host_code']) ?></small><?php endif; ?></td>
+      <td class="zones-admin-user-status" data-label="สถานะ"><span class="zones-admin-badge <?= (int)$u['is_active'] ? 'zones-admin-badge--on' : 'zones-admin-badge--off' ?>"><?= (int)$u['is_active'] ? 'เปิดใช้งาน' : 'ระงับ' ?></span><small><?= e(approval_label($u['approval_status'])) ?></small></td>
+      <td class="zones-admin-actions"><button type="button" onclick='openUserEdit(<?= json_encode($u, JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP) ?>,<?= json_encode($assignments[(int)$u['id']] ?? []) ?>)' class="zones-admin-button">แก้ไข/ย้าย</button></td>
+    </tr><?php endforeach; ?></tbody></table></div>
   </section>
 
-  <section class="mt-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"><details><summary class="font-bold cursor-pointer">ประวัติการจัดการล่าสุด</summary><div class="mt-3 overflow-auto"><table class="w-full text-sm min-w-[700px]"><thead><tr class="bg-slate-100"><th class="text-left p-3">วันเวลา</th><th class="text-left p-3">ผู้ดำเนินการ</th><th class="text-left p-3">คำสั่ง</th><th class="text-left p-3">เป้าหมาย</th></tr></thead><tbody><?php foreach($recentAudits as $a): ?><tr class="border-t"><td class="p-3"><?= e(format_thai_datetime($a['created_at'])) ?></td><td class="p-3"><?= e($a['actor_name'] ?: '-') ?></td><td class="p-3 font-mono text-xs"><?= e($a['action']) ?></td><td class="p-3"><?= e($a['target_type'].' #'.$a['target_id']) ?></td></tr><?php endforeach; ?></tbody></table></div></details></section>
+  <section class="zones-admin-section zones-admin-section--audit"><details><summary>ประวัติการจัดการล่าสุด</summary><div class="zones-admin-table-wrap"><table class="zones-admin-table zones-admin-audit-table"><thead><tr><th>วันเวลา</th><th>ผู้ดำเนินการ</th><th>คำสั่ง</th><th>เป้าหมาย</th></tr></thead><tbody><?php foreach($recentAudits as $a): ?><tr><td data-label="วันเวลา"><?= e(format_thai_datetime($a['created_at'])) ?></td><td data-label="ผู้ดำเนินการ"><?= e($a['actor_name'] ?: '-') ?></td><td class="zones-admin-code" data-label="คำสั่ง"><?= e($a['action']) ?></td><td data-label="เป้าหมาย"><?= e($a['target_type'].' #'.$a['target_id']) ?></td></tr><?php endforeach; ?></tbody></table></div></details></section>
 </main>
 <dialog id="newZone" class="rounded-2xl p-0 w-[min(92vw,480px)] backdrop:bg-slate-900/60"><form method="post" class="p-6"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="create_zone"><h2 class="text-xl font-bold">เพิ่มเขตบริการ</h2><label class="block mt-4 text-sm font-semibold">รหัสเขต<input name="zone_code" maxlength="50" pattern="[A-Za-z0-9_-]{2,50}" required class="mt-1 w-full h-11 rounded-xl border border-slate-300 px-3" placeholder="เช่น ZONE_A"></label><label class="block mt-3 text-sm font-semibold">ชื่อเขต<input name="zone_name" maxlength="255" required class="mt-1 w-full h-11 rounded-xl border border-slate-300 px-3"></label><div class="flex justify-end gap-2 mt-5"><button type="button" onclick="this.closest('dialog').close()" class="rounded-xl border px-4 py-2">ยกเลิก</button><button class="rounded-xl bg-blue-600 text-white px-4 py-2 font-semibold">เพิ่มเขต</button></div></form></dialog>
 
