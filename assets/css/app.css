@@ -1459,6 +1459,7 @@
 .admin-work-queue { background: #fff; }
 .admin-work-queue .app-footer { border-top-color: #a9bfce; background: #f5f9fd; }
 .admin-work-queue__main {
+  box-sizing: border-box;
   width: min(1220px, 100%);
   min-width: 0;
   margin: 18px auto 56px;
