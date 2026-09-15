@@ -258,7 +258,16 @@ $zones = $pdo->query('SELECT z.*,
     FROM service_zones z ORDER BY z.is_active DESC, z.zone_name')->fetchAll();
 $facilities = $pdo->query('SELECT f.*, z.zone_name FROM facilities f LEFT JOIN service_zones z ON z.id=f.zone_id ORDER BY z.zone_name, f.facility_name')->fetchAll();
 $admins = $pdo->query("SELECT id, name, username, host_code FROM users WHERE role='admin' ORDER BY name, username")->fetchAll();
-$managedUsersStmt = $pdo->prepare("SELECT u.*,
+$managedUsersStmt = $pdo->prepare("SELECT
+    u.id,
+    u.name,
+    u.position,
+    u.username,
+    u.role,
+    u.is_active,
+    u.host_code,
+    u.facility_name,
+    u.approval_status,
     (SELECT GROUP_CONCAT(z.zone_name ORDER BY z.zone_name SEPARATOR ', ')
      FROM user_zone_assignments uza JOIN service_zones z ON z.id=uza.zone_id
      WHERE uza.user_id=u.id) zone_names
