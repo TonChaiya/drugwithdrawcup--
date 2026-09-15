@@ -244,17 +244,56 @@ rsort($fiscalYears, SORT_NUMERIC);
   </div>
   <?php include __DIR__ . '/includes/footer.php'; ?>
   <script>
-    function openModal(id) {
+    var drugAdminOpenModalId = null;
+    var drugAdminModalReturnFocus = {};
+    var drugAdminModalFocusTimer = null;
+    var drugAdminFocusableSelector = 'a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
+    function drugAdminFocusableElements(modal) {
+      return Array.prototype.slice.call(modal.querySelectorAll(drugAdminFocusableSelector)).filter(function (element) {
+        return !element.disabled
+          && element.getAttribute('aria-hidden') !== 'true'
+          && element.getClientRects().length > 0
+          && window.getComputedStyle(element).visibility !== 'hidden';
+      });
+    }
+
+    function openModal(id, preferredFocus) {
       var modal = document.getElementById(id);
+      if (!modal) return;
+      var opener = document.activeElement;
+      drugAdminModalReturnFocus[id] = opener && opener !== document.body ? opener : null;
+      drugAdminOpenModalId = id;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.classList.add('modal-open');
+      window.clearTimeout(drugAdminModalFocusTimer);
+      drugAdminModalFocusTimer = window.setTimeout(function () {
+        if (drugAdminOpenModalId !== id || modal.classList.contains('hidden')) return;
+        var target = preferredFocus && modal.contains(preferredFocus) && !preferredFocus.disabled
+          ? preferredFocus
+          : drugAdminFocusableElements(modal)[0];
+        var dialog = modal.querySelector('[role="dialog"]');
+        if (!target && dialog) {
+          if (!dialog.hasAttribute('tabindex')) dialog.setAttribute('tabindex', '-1');
+          target = dialog;
+        }
+        if (target) target.focus();
+      }, 0);
     }
     function closeModal(id) {
       var modal = document.getElementById(id);
+      if (!modal) return;
+      window.clearTimeout(drugAdminModalFocusTimer);
       modal.classList.add('hidden');
       modal.classList.remove('flex');
-      document.body.classList.remove('modal-open');
+      if (drugAdminOpenModalId === id) drugAdminOpenModalId = null;
+      if (!document.querySelector('.drug-admin-modal:not(.hidden)')) document.body.classList.remove('modal-open');
+      var returnFocus = drugAdminModalReturnFocus[id];
+      delete drugAdminModalReturnFocus[id];
+      if (returnFocus && returnFocus.isConnected && !returnFocus.disabled && returnFocus.getClientRects().length > 0) {
+        returnFocus.focus();
+      }
     }
     function backdropClose(event, id) { if (event.target.id === id) closeModal(id); }
     function openAddModal() {
@@ -263,8 +302,7 @@ rsort($fiscalYears, SORT_NUMERIC);
       document.getElementById('drugId').value = '';
       document.getElementById('drugFiscalYear').value = '<?php echo $defaultFiscalYear; ?>';
       document.getElementById('drugModalTitle').textContent = 'เพิ่มรายการยา';
-      openModal('drugModal');
-      setTimeout(function () { document.getElementById('drugCode').focus(); }, 50);
+      openModal('drugModal', document.getElementById('drugCode'));
     }
     function openEditModal(button) {
       document.getElementById('drugForm').reset();
@@ -277,8 +315,7 @@ rsort($fiscalYears, SORT_NUMERIC);
       document.getElementById('drugType').value = button.dataset.type;
       document.getElementById('drugFiscalYear').value = button.dataset.year;
       document.getElementById('drugModalTitle').textContent = 'แก้ไขรายการยา ID ' + button.dataset.id;
-      openModal('drugModal');
-      setTimeout(function () { document.getElementById('drugCode').focus(); }, 50);
+      openModal('drugModal', document.getElementById('drugCode'));
     }
     function openSingleStatusModal(button) {
       var currentlyActive = button.dataset.active === '1';
@@ -459,11 +496,30 @@ rsort($fiscalYears, SORT_NUMERIC);
       }
     });
     document.addEventListener('keydown', function (event) {
+      if (!drugAdminOpenModalId) return;
+      var modal = document.getElementById(drugAdminOpenModalId);
+      if (!modal || modal.classList.contains('hidden')) return;
       if (event.key === 'Escape') {
-        ['drugModal','importModal','importPreviewModal','bulkStatusModal','singleStatusModal','deleteModal'].forEach(function (id) {
-          if (!document.getElementById(id)) return;
-          if (!document.getElementById(id).classList.contains('hidden')) closeModal(id);
-        });
+        event.preventDefault();
+        closeModal(drugAdminOpenModalId);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      var focusable = drugAdminFocusableElements(modal);
+      if (!focusable.length) {
+        event.preventDefault();
+        var dialog = modal.querySelector('[role="dialog"]');
+        if (dialog) dialog.focus();
+        return;
+      }
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
       }
     });
     function visiblePageRows() {
