@@ -62,7 +62,6 @@ $withdrawStatusLabel = $statusLabels[$w['status']] ?? $w['status'];
 ob_start();
 ?>
 
-<style>
 body { font-family: "garuda"; font-size: 13px; }
 
 .highlight-total {
@@ -124,9 +123,11 @@ body { font-family: "garuda"; font-size: 13px; }
   text-align: center;
   font-size: 14px;
 }
-</style>
+<?php
+$documentStyles = ob_get_clean();
+ob_start();
+?>
 
-<htmlpageheader name="header">
   <div style="text-align:center; font-weight:bold; font-size:16px;">
     ใบเบิกเวชภัณฑ์
   </div>
@@ -145,9 +146,11 @@ body { font-family: "garuda"; font-size: 13px; }
       <td></td>
     </tr>
   </table>
-</htmlpageheader>
 
-<sethtmlpageheader name="header" value="on" show-this-page="1" />
+<?php
+$headerHtml = ob_get_clean();
+ob_start();
+?>
 
 <!-- ====================== -->
 <!-- ตารางรายการที่อนุมัติ -->
@@ -301,6 +304,7 @@ $html = ob_get_clean();
 $mpdf = new \Mpdf\Mpdf([
     'default_font' => 'garuda',
     'margin_top' => 50,
+    'setAutoTopMargin' => 'stretch',
     'margin_bottom' => 20,
     // Keep the normal margin and reserve more space only when long footer text wraps.
     'setAutoBottomMargin' => 'stretch',
@@ -327,5 +331,8 @@ $footerHtml = <<<HTML
 HTML;
 $mpdf->SetHTMLFooter($footerHtml);
 
+$mpdf->WriteHTML($documentStyles, \Mpdf\HTMLParserMode::HEADER_CSS);
+// Register the measured header before the first page starts.
+$mpdf->SetHTMLHeader($headerHtml);
 $mpdf->WriteHTML($html);
 $mpdf->Output("withdraw_$withdrawCode.pdf", "I");
