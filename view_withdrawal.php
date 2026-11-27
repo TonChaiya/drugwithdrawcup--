@@ -734,14 +734,6 @@ foreach($showItems as $it):
                 const deleteItemId = document.getElementById('delete-item-id');
 
                 if (itemsForm && itemsAction) {
-                  itemsForm.addEventListener('keydown', function(e){
-                    if (e.key !== 'Enter') return;
-                    const tag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
-                    if (tag === 'textarea') return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                  });
-
                   itemsForm.addEventListener('submit', function(e){
                     if (!itemsAction.value) {
                       e.preventDefault();
@@ -856,10 +848,6 @@ foreach($showItems as $it):
                   addPendingRow(event.detail.drug, event.detail.token);
                 });
                 
-                // Prevent Enter from submitting the surrounding form when focused in the search box
-                search.addEventListener('keydown', function(e){
-                  if (e.key === 'Enter') { e.preventDefault(); return false; }
-                });
 
                 results.addEventListener('click', function(e){
                   const el = e.target.closest('div[data-id]');

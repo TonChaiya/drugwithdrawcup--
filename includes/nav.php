@@ -146,5 +146,5 @@ if ($navName !== '' && preg_match('/^./u', $navName, $navInitialMatch)) {
 <div class="app-shell-spacer" aria-hidden="true"></div>
 
 <?php if (!defined('DRUG_WITHDRAW_APP_SCRIPT')): define('DRUG_WITHDRAW_APP_SCRIPT', true); ?>
-<script src="<?= e($navAssetPrefix) ?>assets/js/app.js" defer></script>
+<script src="<?= e($navAssetPrefix) ?>assets/js/app.js?v=<?= (int)filemtime(__DIR__ . '/../assets/js/app.js') ?>" defer></script>
 <?php endif; ?>

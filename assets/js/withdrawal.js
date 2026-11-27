@@ -294,16 +294,6 @@
       return true;
     }
 
-    function preventImplicitSubmit(event) {
-      if (event.key !== 'Enter' && event.keyCode !== 13) return;
-      var target = event.target;
-      if (!target || !target.tagName) return;
-      var tagName = target.tagName.toLowerCase();
-      if (tagName === 'textarea' || target.type === 'submit' || tagName === 'button') return;
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
     if (searchInput) searchInput.addEventListener('input', refreshWorkspace);
     if (clearSearchButton && searchInput) {
       clearSearchButton.addEventListener('click', function () {
@@ -408,8 +398,6 @@
       });
     }
 
-    form.addEventListener('keydown', preventImplicitSubmit, true);
-    form.addEventListener('keypress', preventImplicitSubmit, true);
     form.addEventListener('submit', function (event) {
       syncActiveNote();
       if (!validateWithdrawal()) event.preventDefault();

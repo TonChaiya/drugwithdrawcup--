@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!doctype html>
 <html lang="th">
 <head>
+  <script src="assets/js/app.js?v=<?= (int)filemtime(__DIR__ . '/assets/js/app.js') ?>" defer></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>สมัครสมาชิก | ระบบเบิกยา CUP สันกำแพง</title>

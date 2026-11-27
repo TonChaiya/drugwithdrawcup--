@@ -1,6 +1,40 @@
 (function () {
   'use strict';
 
+  var singleLineTypes = new Set([
+    'text', 'search', 'tel', 'url', 'email', 'password', 'number',
+    'date', 'month', 'week', 'time', 'datetime-local'
+  ]);
+  var datalistEnter = null;
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Enter' || event.defaultPrevented || event.isComposing || event.keyCode === 229) return;
+    var input = event.target;
+    if (!(input instanceof HTMLInputElement) || input.disabled
+        || !singleLineTypes.has(input.type) || !input.form || input.form.method !== 'post') return;
+    if (!input.list) {
+      event.preventDefault();
+      return;
+    }
+    // Keep native datalist selection and block only an implicit submit.
+    datalistEnter = input;
+    setTimeout(function () { datalistEnter = null; }, 0);
+  });
+
+  document.addEventListener('click', function (event) {
+    if (!datalistEnter || !event.isTrusted || event.detail !== 0 || document.activeElement !== datalistEnter) return;
+    var button = event.target.closest('button, input');
+    if (button && button.form === datalistEnter.form && (button.type === 'submit' || button.type === 'image')) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+
+  document.addEventListener('submit', function (event) {
+    if (datalistEnter && event.isTrusted && !event.submitter && event.target === datalistEnter.form
+        && document.activeElement === datalistEnter) event.preventDefault();
+  }, true);
+
   var navPanel;
   var navToggle;
   var lastFocusedElement = null;
