@@ -1,9 +1,13 @@
 <?php
 require 'includes/db.php';
 require 'includes/auth.php';
-$user = require_login($pdo);
+require 'includes/withdrawal_recovery.php';
+$user = require_login($pdo, 'index.php', 'new');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: withdraw.php'); exit; }
-if (!verify_csrf($_POST['csrf_token'] ?? '')) { die('Invalid CSRF'); }
+if (!verify_csrf($_POST['csrf_token'] ?? '')) {
+  $_SESSION['flash'] = 'เซสชันเปลี่ยนแปลง กรุณาตรวจข้อมูลใบเบิกและส่งใหม่';
+  header('Location: index.php?resume=new', true, 303); exit;
+}
 
 $user_id = $user['id'];
 $host_code = $user['host_code'] ?? null;
@@ -27,6 +31,7 @@ if (!in_array($action, ['submit', 'draft'], true)
 
 try {
   $pdo->beginTransaction();
+  withdrawal_claim_receipt($pdo, $user, 'new');
   // find existing draft if any
   $stmtDraft = $pdo->prepare('SELECT * FROM withdrawals WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 1 FOR UPDATE');
   $stmtDraft->execute([$user_id,'draft']);
@@ -129,6 +134,7 @@ try {
 } catch (Exception $e) {
   if ($pdo->inTransaction()) $pdo->rollBack();
   error_log('submit_withdrawal.php error: ' . $e->getMessage());
-  $_SESSION['flash'] = 'เกิดข้อผิดพลาดในการบันทึกใบเบิก กรุณาลองใหม่';
+  $_SESSION['flash'] = $e instanceof RuntimeException && !$e instanceof PDOException
+    ? $e->getMessage() : 'เกิดข้อผิดพลาดในการบันทึกใบเบิก กรุณาลองใหม่';
   header('Location: withdraw.php'); exit;
 }

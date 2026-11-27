@@ -90,3 +90,11 @@ body {
     </div>
   </div>
 </footer>
+<?php if (!empty($_SESSION['user']['id'])): ?>
+  <?php $sessionAssetPrefix = str_contains($_SERVER['SCRIPT_NAME'] ?? '', '/report/') ? '../' : ''; ?>
+  <script defer src="<?= $sessionAssetPrefix ?>assets/js/withdrawal-session.js?v=<?= (int)filemtime(__DIR__ . '/../assets/js/withdrawal-session.js') ?>"
+    data-withdrawal-session data-account="<?= (int)$_SESSION['user']['id'] ?>"
+    data-account-facility="<?= e($_SESSION['user']['host_code'] ?? '') ?>"
+    data-csrf="<?= e(csrf_token()) ?>"
+    data-remaining="<?= max(0, min((int)($_SESSION['last_activity_at'] ?? 0) + APP_SESSION_IDLE, (int)($_SESSION['login_at'] ?? 0) + APP_SESSION_ABSOLUTE) - time()) ?>"></script>
+<?php endif; ?>

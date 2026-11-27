@@ -1,7 +1,7 @@
 <?php
 require 'includes/db.php';
 require 'includes/auth.php';
-$user = require_login($pdo);
+$user = require_login($pdo, 'index.php', 'new');
 $host_code = $user['host_code'] ?? null;
 if (!preg_match('/^[0-9]{5}$/', (string)$host_code)) {
     http_response_code(403);
@@ -88,7 +88,7 @@ $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
       <div class="app-alert" role="status"><?= e($msg) ?></div>
     <?php endif; ?>
 
-    <form id="withdrawalForm" method="post" action="submit_withdrawal.php" class="withdrawal-form">
+    <form id="withdrawalForm" method="post" action="submit_withdrawal.php" class="withdrawal-form" data-withdrawal-recovery="new" data-facility="<?= e($user['host_code']) ?>">
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
       <section class="withdrawal-toolbar" aria-label="ค้นหาและกรองรายการยา">

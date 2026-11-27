@@ -1,8 +1,9 @@
 <?php
 require 'includes/db.php';
 require 'includes/auth.php';
-$currentUser = require_login($pdo);
+require 'includes/withdrawal_recovery.php';
 $id = (int)($_GET['id'] ?? 0);
+$currentUser = require_login($pdo, 'index.php', (string)$id);
 if (!$id) { echo 'Invalid id'; exit; }
 
 $stmt = $pdo->prepare('SELECT w.*, u.username, u.name as user_name, u.facility_name FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.id = ?');
@@ -36,7 +37,10 @@ $canCancelWithdrawal = (($isOwner && $w['status'] !== 'approved') || $isAdmin)
 
 // handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if (!verify_csrf($_POST['csrf'] ?? '')) { $_SESSION['flash']='Invalid CSRF'; header('Location: view_withdrawal.php?id=' . $id); exit; }
+  if (!verify_csrf($_POST['csrf'] ?? '')) {
+    $_SESSION['flash'] = 'เซสชันเปลี่ยนแปลง กรุณาตรวจข้อมูลใบเบิกและส่งใหม่';
+    header('Location: index.php?resume=' . $id, true, 303); exit;
+  }
   $action = $_POST['action'] ?? '';
   // add item to draft
   if ($action === 'add_item' && $w['status'] === 'draft' && ($isOwner || $isAdmin)) {
@@ -143,6 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($lockedStatus !== 'submitted') {
         throw new RuntimeException('อนุมัติได้เฉพาะใบเบิกที่อยู่ระหว่างรออนุมัติ');
       }
+      withdrawal_claim_receipt($pdo, $currentUser, (string)$id);
+      withdrawal_check_form_version($pdo, $id, $lockedStatus);
       $expectedStmt = $pdo->prepare('SELECT id FROM withdrawal_items WHERE withdrawal_id=? ORDER BY id FOR UPDATE');
       $expectedStmt->execute([$id]);
       $expectedIds = array_map('intval', $expectedStmt->fetchAll(PDO::FETCH_COLUMN));
@@ -194,6 +200,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $lockedStatus = (string)$lockWithdrawal->fetchColumn();
       $maySave = ($isOwner && $lockedStatus === 'draft') || ($isAdmin && in_array($lockedStatus, ['draft','submitted'], true));
       if (!$maySave) throw new RuntimeException('สถานะใบเบิกเปลี่ยนไปแล้ว กรุณาโหลดหน้าใหม่');
+      withdrawal_claim_receipt($pdo, $currentUser, (string)$id);
+      withdrawal_check_form_version($pdo, $id, $lockedStatus);
       if ($lockedStatus === 'submitted' && ($qtys || $currents || $newDrugIds || $newQtys || $newNotes || $newCurrents)) {
         throw new RuntimeException('ใบเบิกรออนุมัติแก้ได้เฉพาะจำนวนจ่ายจริงและหมายเหตุ');
       }
@@ -374,6 +382,7 @@ if ($action === 'delete' && (($isOwner && $w['status'] !== 'approved') || $isAdm
 
 $stmtItems = $pdo->prepare('SELECT wi.id as wi_id, wi.drug_item_id, wi.quantity,wi.current_stock_snapshot, wi.delivered_quantity, wi.note, wi.pack_size_snapshot, wi.unit_snapshot, wi.working_code_snapshot AS working_code, d.name, d.pack_size as current_pack, d.unit as current_unit FROM withdrawal_items wi JOIN drug_item d ON wi.drug_item_id = d.id WHERE wi.withdrawal_id = ? ORDER BY wi.id DESC');
 $stmtItems->execute([$id]); $items = $stmtItems->fetchAll();
+$editableItems = ($w['status'] === 'draft' && ($isOwner || $isAdmin)) || ($w['status'] === 'submitted' && $isAdmin);
 
 // --- แยกกลุ่มรายการสำหรับใบเบิกที่อนุมัติแล้ว ---
 $approvedItems = [];
@@ -484,7 +493,11 @@ for ($i = 1; $i <= 3; $i++) {
     <?php endif; ?>
 
     <section class="approval-list" aria-labelledby="approvalListTitle">
-          <form id="items-form" method="post">
+          <form id="items-form" method="post"<?php if ($editableItems): ?>
+            data-withdrawal-recovery="<?= $id ?>" data-facility="<?= e($w['host_code']) ?>" data-status="<?= e($w['status']) ?>"<?php endif; ?>>
+            <?php if ($editableItems): ?>
+              <input type="hidden" name="form_version" value="<?= e(withdrawal_form_version($w['status'], $items)) ?>">
+            <?php endif; ?>
             <input type="hidden" name="csrf" value="<?php echo e(csrf_token()); ?>">
             <input type="hidden" name="action" id="items-action" value="">
           <div>
@@ -550,7 +563,7 @@ foreach($showItems as $it):
                 <?php if($w['status']==='draft' && ($isOwner || $isAdmin)): ?>
                     <input type="number"
                            name="current_stock[<?php echo $it['wi_id']; ?>]"
-                           value="<?php echo $initial_current_stock; ?>"
+                           value="<?php echo $it['current_stock_snapshot'] === null ? '' : $initial_current_stock; ?>"
                            min="0" inputmode="numeric" aria-label="คงเหลือ <?php echo e($it['working_code']); ?>"
                            class="approval-number approval-number--stock"
                            data-packnum="<?php echo $packNum; ?>"
@@ -780,10 +793,10 @@ foreach($showItems as $it):
                   return n.toFixed(2).replace(/\.00$/, '');
                 }
 
-                function addPendingRow(drug) {
+                function addPendingRow(drug, restoredToken) {
                   const tbody = document.getElementById('items-tbody');
                   if (!tbody) return;
-                  const token = 'new_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+                  const token = restoredToken || ('new_' + Date.now() + '_' + Math.random().toString(36).slice(2));
                   const packRaw = drug.pack_size || '';
                   const packNum = parseFloat(packRaw);
                   const safePackNum = Number.isFinite(packNum) ? packNum : 0;
@@ -833,8 +846,12 @@ foreach($showItems as $it):
                   row.querySelector('.remove-pending-item')?.addEventListener('click', function() {
                     row.remove();
                   });
-                  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  if (!restoredToken) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
+
+                search.form.addEventListener('withdrawal:restore-row', function(event) {
+                  addPendingRow(event.detail.drug, event.detail.token);
+                });
                 
                 // Prevent Enter from submitting the surrounding form when focused in the search box
                 search.addEventListener('keydown', function(e){
@@ -996,7 +1013,8 @@ foreach($showItems as $it):
                     if (!confirm('บันทึกการแก้ไขรายการใช่หรือไม่?')) return;
                     if (window.syncAllNoteFields) window.syncAllNoteFields();
                     itemsAction.value = 'save';
-                    itemsForm.submit();
+                    itemsForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+                      && HTMLFormElement.prototype.submit.call(itemsForm);
                   });
                 }
               });
@@ -1012,7 +1030,8 @@ foreach($showItems as $it):
                     if (!confirm('อนุมัติใบเบิกและบันทึกจำนวนจ่ายจริงใช่หรือไม่?')) return;
                     if (window.syncAllNoteFields) window.syncAllNoteFields();
                     itemsAction.value = 'approve';
-                    itemsForm.submit();
+                    itemsForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+                      && HTMLFormElement.prototype.submit.call(itemsForm);
                   });
                 }
               });
@@ -1042,7 +1061,7 @@ foreach($showItems as $it):
             <button id="save-btn" type="button" class="approval-button approval-button--secondary">บันทึกการแก้ไข</button>
           <?php endif; ?>
           <?php if ($w['status'] === 'draft' && ($isOwner || $isAdmin)): ?>
-            <form method="post">
+            <form method="post" data-withdrawal-preflight="<?= $id ?>">
               <input type="hidden" name="csrf" value="<?php echo e(csrf_token()); ?>">
               <button name="action" value="submit" class="approval-button approval-button--primary">ส่งเพื่อขออนุมัติใบเบิก</button>
             </form>
