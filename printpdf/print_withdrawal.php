@@ -2,6 +2,7 @@
 require __DIR__ . '/../includes/db.php';
 require __DIR__ . '/../includes/auth.php';
 $currentUser = require_login($pdo, '../index.php');
+$generatedAt = date('Y-m-d H:i:s');
 
 function format_withdraw_code_pdf($id){
     return 'S' . str_pad($id, 5, '0', STR_PAD_LEFT);
@@ -300,16 +301,28 @@ $html = ob_get_clean();
 $mpdf = new \Mpdf\Mpdf([
     'default_font' => 'garuda',
     'margin_top' => 50,
-    'margin_bottom' => 20
+    'margin_bottom' => 20,
+    // Keep the normal margin and reserve more space only when long footer text wraps.
+    'setAutoBottomMargin' => 'stretch',
+    'autoMarginPadding' => 2,
 ]);
 
 $footerCreator = htmlspecialchars($w['user_name'], ENT_QUOTES, 'UTF-8');
 $footerUsername = htmlspecialchars($w['username'], ENT_QUOTES, 'UTF-8');
 $footerFacility = htmlspecialchars($w['facility_name'], ENT_QUOTES, 'UTF-8');
 $footerCreatedAt = htmlspecialchars(format_thai_datetime($w['created_at']), ENT_QUOTES, 'UTF-8');
+$footerPrinter = htmlspecialchars((string)$currentUser['name'], ENT_QUOTES, 'UTF-8');
+$footerPrinterUsername = htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8');
+$footerPrintedAt = htmlspecialchars(format_thai_datetime($generatedAt), ENT_QUOTES, 'UTF-8');
 $footerHtml = <<<HTML
 <div style="border-top:0.4px solid #b8c1cc; padding-top:4px; color:#667085; font-size:8px; line-height:1.35;">
-  ผู้สร้าง: {$footerCreator} ({$footerUsername}) | สถานบริการ: {$footerFacility} | สร้าง: {$footerCreatedAt} | หน้า {PAGENO} / {nbpg}
+  <div>ผู้สร้าง: {$footerCreator} ({$footerUsername}) | สถานบริการ: {$footerFacility} | สร้าง: {$footerCreatedAt}</div>
+  <table style="width:100%; border-collapse:collapse; color:#667085; font-family:garuda; font-size:8px; line-height:1.35;">
+    <tr>
+      <td style="padding:0;">ผู้พิมพ์: {$footerPrinter} ({$footerPrinterUsername}) | พิมพ์: {$footerPrintedAt}</td>
+      <td style="padding:0; width:22mm; text-align:right; white-space:nowrap; vertical-align:bottom;">หน้า {PAGENO} / {nbpg}</td>
+    </tr>
+  </table>
 </div>
 HTML;
 $mpdf->SetHTMLFooter($footerHtml);
