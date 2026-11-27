@@ -1,28 +1,25 @@
 <?php
+require_once __DIR__ . '/session_store.php';
 
 /**
  * Reload the signed-in user from the database on every protected request.
  * This makes account approval and suspension take effect immediately.
  */
-function require_login(PDO $pdo, string $loginUrl = 'index.php'): array
+function authenticated_user(PDO $pdo, bool $touch = true): ?array
 {
     if (empty($_SESSION['user']['id'])) {
-        header('Location: ' . $loginUrl);
-        exit;
+        return null;
     }
 
     $now = time();
-    $loginAt = (int)($_SESSION['login_at'] ?? $now);
-    $lastActivity = (int)($_SESSION['last_activity_at'] ?? $now);
-    if (($now - $lastActivity) > 1800 || ($now - $loginAt) > 43200) {
+    $loginAt = (int)($_SESSION['login_at'] ?? 0);
+    $lastActivity = (int)($_SESSION['last_activity_at'] ?? 0);
+    if ($now >= min($lastActivity + APP_SESSION_IDLE, $loginAt + APP_SESSION_ABSOLUTE)) {
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) session_regenerate_id(true);
         $_SESSION['flash'] = 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่';
-        header('Location: ' . $loginUrl);
-        exit;
+        return null;
     }
-    $_SESSION['login_at'] = $loginAt;
-    $_SESSION['last_activity_at'] = $now;
 
     $stmt = $pdo->prepare(
         'SELECT id, host_code, facility_name, name, username, role, is_active, approval_status
@@ -47,8 +44,7 @@ function require_login(PDO $pdo, string $loginUrl = 'index.php'): array
         } else {
             $_SESSION['flash'] = 'บัญชีนี้ยังไม่ได้กำหนดรหัสสถานบริการที่ถูกต้อง กรุณาติดต่อแอดมิน';
         }
-        header('Location: ' . $loginUrl);
-        exit;
+        return null;
     }
 
     $_SESSION['user'] = [
@@ -60,7 +56,32 @@ function require_login(PDO $pdo, string $loginUrl = 'index.php'): array
         'facility_name' => $user['facility_name'],
     ];
 
+    if ($touch) $_SESSION['last_activity_at'] = $now;
     return $_SESSION['user'];
+}
+
+function withdrawal_resume_url($resume): ?string
+{
+    if ($resume === 'new') return 'withdraw.php';
+    if (is_string($resume) && preg_match('/\A[1-9][0-9]{0,9}\z/', $resume)) {
+        return 'view_withdrawal.php?id=' . $resume;
+    }
+    return null;
+}
+
+function require_login(PDO $pdo, string $loginUrl = 'index.php', ?string $resume = null): array
+{
+    $user = authenticated_user($pdo);
+    if ($user !== null) return $user;
+    // A stale protected request must not replace a newer cookie from a login
+    // or another tab. The login page can establish its own anonymous session.
+    if (isset($_COOKIE[session_name()])) header_remove('Set-Cookie');
+    if ($resume !== null && withdrawal_resume_url($resume) !== null) {
+        $_SESSION['flash'] ??= 'กรุณาเข้าสู่ระบบอีกครั้งเพื่อตรวจและกู้ข้อมูลใบเบิก';
+        $loginUrl .= '?resume=' . rawurlencode($resume);
+    }
+    header('Location: ' . $loginUrl, true, 303);
+    exit;
 }
 
 function require_admin(PDO $pdo, string $loginUrl = 'index.php'): array

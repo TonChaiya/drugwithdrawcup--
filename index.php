@@ -1,10 +1,15 @@
 <?php
 require 'includes/db.php';
 require 'includes/rate_limit.php';
-if (isset($_SESSION['user'])) { header('Location: dashboard.php'); exit; }
+require 'includes/auth.php';
+$resume = $_GET['resume'] ?? null;
+$afterLogin = withdrawal_resume_url($resume) ?? 'dashboard.php';
+if (isset($_SESSION['user']) && authenticated_user($pdo, false)) {
+  header('Location: ' . $afterLogin, true, 303); exit;
+}
 
 $error = '';
-$flash = $_SESSION['flash'] ?? null; 
+$flash = $_SESSION['flash'] ?? ($afterLogin !== 'dashboard.php' ? 'กรุณาเข้าสู่ระบบอีกครั้งเพื่อตรวจและกู้ข้อมูลใบเบิก' : null);
 unset($_SESSION['flash']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -45,7 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       } elseif (isset($u['is_active']) && !$u['is_active']) {
         $error = 'บัญชีผู้ใช้นี้ถูกปิดการใช้งาน';
       } else {
-      session_regenerate_id(true);
+      if (!session_regenerate_id(true)) {
+        http_response_code(503);
+        exit('ระบบเซสชันไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้ง');
+      }
       unset($_SESSION['login_failures'], $_SESSION['login_first_failure'], $_SESSION['login_locked_until']);
       unset($_SESSION['csrf_token']);
       security_rate_clear($pdo, 'login', $rateIdentity);
@@ -60,7 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       ];
       $_SESSION['login_at'] = time();
       $_SESSION['last_activity_at'] = time();
-      header('Location: dashboard.php');
+      session_write_close();
+      header('Location: ' . $afterLogin, true, 303);
       exit;
       }
     } else {

@@ -5,16 +5,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verify_csrf($_POST['csrf_token'] ?
     header('Allow: POST');
     exit('Method not allowed');
 }
-// Clear session and redirect to login
-if (session_status() === PHP_SESSION_NONE) session_start();
-// unset all session variables
 $_SESSION = [];
-// destroy session cookie
 if (ini_get('session.use_cookies')) {
     $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params['path'], $params['domain'], $params['secure'], $params['httponly']
-    );
+    unset($params['lifetime']);
+    setcookie(session_name(), '', ['expires' => time() - 42000] + $params);
 }
-session_destroy();
+if (!session_destroy()) {
+    http_response_code(503);
+    exit('ออกจากระบบไม่สำเร็จ กรุณาลองใหม่');
+}
 header('Location: index.php'); exit;
