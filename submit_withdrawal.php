@@ -2,6 +2,7 @@
 require 'includes/db.php';
 require 'includes/auth.php';
 require 'includes/withdrawal_recovery.php';
+require 'includes/withdrawal_drafts.php';
 $user = require_login($pdo, 'index.php', 'new');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: withdraw.php'); exit; }
 if (!verify_csrf($_POST['csrf_token'] ?? '')) {
@@ -31,35 +32,25 @@ if (!in_array($action, ['submit', 'draft'], true)
 
 try {
   $pdo->beginTransaction();
-  withdrawal_claim_receipt($pdo, $user, 'new');
-  // find existing draft if any
-  $stmtDraft = $pdo->prepare('SELECT * FROM withdrawals WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 1 FOR UPDATE');
-  $stmtDraft->execute([$user_id,'draft']);
-  $draft = $stmtDraft->fetch();
 
-  if ($draft) {
-    // The new form has no draft ID and must not erase an existing draft.
+  // Lock a row that exists even when there is no draft. The first consistent
+  // read in this transaction then sees drafts committed by earlier creators.
+  lock_withdrawal_owner($pdo, (int)$user_id);
+
+  if (outstanding_withdrawal_drafts($pdo, (int)$user_id)) {
     $pdo->rollBack();
-    $_SESSION['flash'] = 'มีใบเบิกร่างอยู่แล้ว กรุณาแก้ไขใบเบิกร่างเดิม';
-    header('Location: view_withdrawal.php?id=' . (int)$draft['id']); exit;
-  } else {
-    // create new: only assign withdraw_no when action is 'submit'
-    if ($action === 'submit') {
-      // create row first (withdraw_no will be set to the new id afterwards)
-      $stmtIns = $pdo->prepare('INSERT INTO withdrawals (host_code,user_id,withdraw_no,status) VALUES (?,?,NULL,?)');
-      $stmtIns->execute([$host_code,$user_id,'submitted']);
-    } else {
-      $stmtIns = $pdo->prepare('INSERT INTO withdrawals (host_code,user_id,withdraw_no,status) VALUES (?,?,NULL,?)');
-      $stmtIns->execute([$host_code,$user_id,'draft']);
-    }
-    $withdrawal_id = $pdo->lastInsertId();
-    // set withdraw_no to the primary id to use id as reference
-    try {
-      $updNo = $pdo->prepare('UPDATE withdrawals SET withdraw_no = ? WHERE id = ?');
-      $updNo->execute([(int)$withdrawal_id, $withdrawal_id]);
-    } catch (Exception $e) {
-      // not critical: continue, withdraw_no may be null but id exists
-    }
+    header('Location: withdraw.php', true, 303); exit;
+  }
+  withdrawal_claim_receipt($pdo, $user, 'new');
+  $stmtIns = $pdo->prepare('INSERT INTO withdrawals (host_code,user_id,withdraw_no,status) VALUES (?,?,NULL,?)');
+  $stmtIns->execute([$host_code, $user_id, $action === 'submit' ? 'submitted' : 'draft']);
+  $withdrawal_id = $pdo->lastInsertId();
+  // Set withdraw_no to the primary id to use id as reference.
+  try {
+    $updNo = $pdo->prepare('UPDATE withdrawals SET withdraw_no = ? WHERE id = ?');
+    $updNo->execute([(int)$withdrawal_id, $withdrawal_id]);
+  } catch (Exception $e) {
+    // Not critical: continue, withdraw_no may be null but id exists.
   }
 
   // clear any existing items if re-saving
@@ -124,7 +115,7 @@ try {
     $user,
     (int)$withdrawal_id,
     $action === 'submit' ? 'submit' : 'save_draft',
-    ['status' => $draft['status'] ?? null],
+    ['status' => null],
     ['status' => $action === 'submit' ? 'submitted' : 'draft', 'item_count' => count(array_filter($qtys, static fn($q) => (int)$q > 0))]
   );
 

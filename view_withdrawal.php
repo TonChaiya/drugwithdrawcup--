@@ -2,6 +2,7 @@
 require 'includes/db.php';
 require 'includes/auth.php';
 require 'includes/withdrawal_recovery.php';
+require 'includes/withdrawal_drafts.php';
 $id = (int)($_GET['id'] ?? 0);
 $currentUser = require_login($pdo, 'index.php', (string)$id);
 if (!$id) { echo 'Invalid id'; exit; }
@@ -357,6 +358,8 @@ if ($action === 'delete' && (($isOwner && $w['status'] !== 'approved') || $isAdm
     if (in_array($new, $allowed, true)) {
       $pdo->beginTransaction();
       try {
+        // Order reopening a draft against new creation by its owner.
+        if ($new === 'draft') lock_withdrawal_owner($pdo, (int)$w['user_id']);
         $stmtCheck = $pdo->prepare('SELECT withdraw_no,status FROM withdrawals WHERE id=? FOR UPDATE');
         $stmtCheck->execute([$id]); $locked = $stmtCheck->fetch();
         $oldStatus = (string)($locked['status'] ?? '');

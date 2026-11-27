@@ -1,11 +1,23 @@
 <?php
 require 'includes/db.php';
 require 'includes/auth.php';
+require 'includes/withdrawal_drafts.php';
 $user = require_login($pdo, 'index.php', 'new');
 $host_code = $user['host_code'] ?? null;
 if (!preg_match('/^[0-9]{5}$/', (string)$host_code)) {
     http_response_code(403);
     exit('บัญชีนี้ยังไม่ได้กำหนดรหัสสถานบริการที่ถูกต้อง');
+}
+
+$drafts = outstanding_withdrawal_drafts($pdo, (int)$user['id'], true);
+if ($drafts) {
+    $facilityAccess = [];
+    $visibleDrafts = array_values(array_filter($drafts, static function ($draft) use ($pdo, $user, &$facilityAccess) {
+        $facility = (string)$draft['host_code'];
+        return $facilityAccess[$facility] ??= can_access_host_code($pdo, $user, $facility);
+    }));
+    require __DIR__ . '/includes/withdrawal_draft_warning.php';
+    exit;
 }
 
 // โหลด type กลุ่มยา (ชื่อกลุ่ม ฯลฯ)
@@ -55,14 +67,6 @@ foreach ($items as $it) {
     $grouped[$t][] = $it;
 }
 
-// A new-form submission must never silently replace the latest draft's items.
-$stmt2 = $pdo->prepare('SELECT * FROM withdrawals WHERE user_id = ? AND status = ? ORDER BY created_at DESC LIMIT 1');
-$stmt2->execute([$user['id'],'draft']);
-$draft = $stmt2->fetch();
-if ($draft) {
-    header('Location: view_withdrawal.php?id=' . (int)$draft['id']);
-    exit;
-}
 $msg = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
 ?>
 <!doctype html>
